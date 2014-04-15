@@ -1,4 +1,3 @@
-NumPlots = 0
 plot_velocity_field = function(res, minrsquared=0.9, arrowscale=15) {
   ## points at each chunk centre
 ##  png(sprintf("velplot%05d.png", NumPlots), width=800, height=800)
@@ -12,5 +11,8 @@ plot_velocity_field = function(res, minrsquared=0.9, arrowscale=15) {
           arrows(row, col, row + ux/arrowscale, col + uy/arrowscale, length=0.1, col=rainbow(16)[log(1/(1-rsquared))])
         })
 ##  dev.off()
-  NumPlots <<- NumPlots + 1
+  if (exists("NumPlots"))
+    NumPlots <<- NumPlots + 1
+  else
+    NumPlots <<- 1
 }
