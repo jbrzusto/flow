@@ -100,7 +100,8 @@ add_sweep = function(...) {
                           CartConverter,
                           c(0, 0, dim(Cart)),  ## geometry of output
                           0, ## number of samples to skip in radial direction (for trigger delay adjustment)
-                          FALSE)
+                          FALSE,
+                          PACKAGE="radR")
 
   ## ## insert data into the Cartesian sweep buffer
   G[,,TSIndex] <<- Cart[] + 0.0
