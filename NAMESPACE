@@ -26,5 +26,6 @@ export (
     rbow,
     repAlong,
     scanFolder,
+    toCart,
     zero_pad
     )
