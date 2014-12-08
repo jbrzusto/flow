@@ -24,5 +24,6 @@ export (
     rad,
     rbow,
     repAlong,
+    scanFolder,
     zero_pad
     )
