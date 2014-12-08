@@ -14,7 +14,7 @@
 #' \item ts double, timestamp for start of pulse
 #' \item trigs integer, trigger count, for detecting dropped pulses
 #' \item trig_clock integer, for accurate timing since start of sweep
-#' \item azi float, azimuth of pulse, relative to start of heading pulse (radians)
+#' \item azi float, azimuth of pulse, relative to start of heading pulse, (0..1)
 #' \item elev float, elevation angle (radians)
 #' \item rot float, rotation of waveguide (polarization - radians)
 #' \item  samples raw vector, digitized samples for each pulse
