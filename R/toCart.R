@@ -34,9 +34,11 @@
 #' @param bkgd: numeric value to return in portion of matrix outside of radar data.
 #' Default: 0.
 #' 
-#' @return numeric matrix; dimensions are \code{ceil(diff(range(xlim)) / res} columns
-#' by \code{ceil(diff(range(ylim)) / res} rows.  Values are interpolated data values
-#' within the range of radar data, and \code{bkgd} outside there.
+#' @return numeric matrix; dimensions are \code{ceil(diff(range(ylim)) / res} rows
+#' by \code{ceil(diff(range(xlim)) / res} columns.  Values are interpolated data values
+#' within the range of radar data, and \code{bkgd} outside there.  Each column is
+#' a strip of image going from North to South, and the matrix consists of data columns
+#' going from West to East.
 #' 
 #' @note Requires that library akima already be loaded.
 #' 
@@ -87,28 +89,30 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd
     ## set up the output grid locations, relative to radar location
 
     xgrid = seq(from = xlim[1], to = xlim[2], by = res)
-    ygrid = seq(from = ylim[1], to = ylim[2], by = res)
+
+    ## Note: reverse order of y axis so that matrix columns go from north to south.
+    ygrid = seq(from = ylim[2], to = ylim[1], by = -res)
 
     ## output matrix size
     nx = length(xgrid)
     ny = length(ygrid)
 
     ## replicate the output coordinates for each valid point, varying x faster
-    xout = rep(xgrid, times = ny)
-    yout = rep(ygrid, each = nx)
+    xout = rep(xgrid, each = ny)
+    yout = rep(ygrid, times = nx)
 
     ## range of all desired output points
     rangeout = sqrt(xout^2 + yout^2)
     
     ## azimuth of all desired output points on scale of 0..1
-    aziout = ((pi / 2 + 136.8 * (pi / 180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
+    aziout = (((-46.8 * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
 
     keep = which(rangeout <= max(range) & aziout >= azi[1] & aziout <= tail(azi,1))
 
     ## interpolate
     z = bicubic(range, azi, d, rangeout[keep], aziout[keep])$z
 
-    rv = matrix(bkgd, nx, ny)
+    rv = matrix(bkgd, ny, nx)
     rv[keep] = z
 
     return(rv)
