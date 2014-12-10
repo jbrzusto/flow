@@ -105,7 +105,7 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd
     rangeout = sqrt(xout^2 + yout^2)
     
     ## azimuth of all desired output points on scale of 0..1
-    aziout = (((-46.8 * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
+    aziout = ((pi / 2 - (attr(s, "heading") * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
 
     keep = which(rangeout <= max(range) & aziout >= azi[1] & aziout <= tail(azi,1))
 
