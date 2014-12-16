@@ -1,4 +1,5 @@
 export (
+    addSweep,
     add_sweep,
     animate_chunk,
     animate_polar_chunk,
@@ -6,6 +7,7 @@ export (
     coords,
     correct_range_dependence,
     deg,
+    exportSweep,
     estimate_currents,
     estimate_radial_currents,
     estimate_range_equalizer,
@@ -16,6 +18,7 @@ export (
     hamming,
     hanning,
     indices,
+    initFlow,
     makeSweeps,
     planeWave,
     plot_radial_velocity_field,

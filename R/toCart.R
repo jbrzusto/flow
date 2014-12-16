@@ -38,7 +38,9 @@
 #' by \code{ceil(diff(range(xlim)) / res} columns.  Values are interpolated data values
 #' within the range of radar data, and \code{bkgd} outside there.  Each column is
 #' a strip of image going from North to South, and the matrix consists of data columns
-#' going from West to East.
+#' going from West to East.  Also, the matrix has a \code{radar.meta} attribute.  This is
+#' a copy of that of \code{sweep} but adds a new item, \code{ts}, which is a two-element
+#' vector giving the timestamps for the first and last pulse in the sweep.
 #' 
 #' @note Requires that library akima already be loaded.
 #' 
@@ -46,18 +48,17 @@
 ##
 
 toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd=0) {
-
+    ## meta data
+    meta = attr(s, "radar.meta")
+    
     ## desired azimuths
     theta = seq(from = 0, to = 1, by = azires / 360)
 
     ## number of samples per pulse
-    ns = attr(s, "ns")
-
-    ## input range cell size, in metres
-    ires = 2.99792458E8 / (2 * attr(s, "rate"))
+    ns = meta$ns
 
     ## values of input range
-    range = ires * (seq(from = 0.5, to = ns - 0.5, by = 1))
+    range = meta$res * (seq(from = 0.5, to = ns - 0.5, by = 1))
     
     ## subselect / replicate the input data according to azimuth mode
     ## this generates the matrix d with appropriate dimensions This
@@ -83,6 +84,8 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd
         stop("FIXME: values for azimode other than 'nearest' not yet implemented")
     }
 
+    meta$ts = s$ts[c(use[1], tail(use, 1))]
+    
     ## we now have a matrix d with raw values for ns samples in each of np pulses,
     ## where pulse azimuths are in azi and range cell centres are in range
 
@@ -105,7 +108,7 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd
     rangeout = sqrt(xout^2 + yout^2)
     
     ## azimuth of all desired output points on scale of 0..1
-    aziout = ((pi / 2 - (attr(s, "heading") * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
+    aziout = ((pi / 2 - (meta$heading * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
 
     keep = which(rangeout <= max(range) & aziout >= azi[1] & aziout <= tail(azi,1))
 
@@ -114,6 +117,8 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd
 
     rv = matrix(bkgd, ny, nx)
     rv[keep] = z
+
+    attr(rv, "radar.meta") = meta
 
     return(rv)
 }
