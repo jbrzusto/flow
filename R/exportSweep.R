@@ -42,16 +42,16 @@ exportSweep = function(s, f=".", siteCode="FORCEVC", ares=0.25, sweepNum) {
     }
     
     outf = file(file.path(f, sprintf("%s_sweep_%s.dat", siteCode,
-        format(s$ts[1], "%Y-m-%dT%H:%M:%OS3", tz="GMT"))), "wb")
+        format(structure(s$ts[1],class=c("POSIXct", "POSIXt")), "%Y-m-%dT%H:%M:%OS3", tz="GMT"))), "wb")
 
-    use = approx(dat$azi, 1:nrow(dat), seq(from=0, to=0.1, by=ares/360),
-        method="constant", rule=1)
+    use = approx(s$azi, 1:nrow(s), seq(from=0, to=1.0, by=ares/360),
+        method="constant", rule=1)$y
     use = use[!is.na(use)]
     for (j in use) {
-        writeBin(c(FlowSweepNum, j), outf, size=2)  ## sweep number, pulse_no
-        writeBin(dat$ts[j], outf, size=8) ## ts
-        writeBin(dat$azi[j], outf, size=4) ## azi
-        writeBin(dat$samples[[j]], out) ## raw pulses
+        writeBin(as.integer(c(FlowSweepNum, j)), outf, size=2)  ## sweep number, pulse_no
+        writeBin(s$ts[j], outf, size=8) ## ts
+        writeBin(s$azi[j], outf, size=4) ## azi
+        writeBin(s$samples[[j]], outf) ## raw pulses
     }
     FlowSweepNum <<- FlowSweepNum + 1L
     close(outf)
