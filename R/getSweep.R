@@ -8,7 +8,7 @@
 #' 
 #' @param map: function mapping timestamps to SQLite files, as returned by \code{scanFolder}
 #' 
-#' @return NULL, if \code{map} does not include {\ts}, otherwise a data.frame with
+#' @return NULL, if \code{map} does not include \code{ts}, otherwise a data.frame with
 #' these columns:
 #' \enumerate{
 #' \item ts double, timestamp for start of pulse
@@ -20,7 +20,7 @@
 #' \item  samples raw vector, digitized samples for each pulse
 #' }
 #' The data.frame will also have these attributes:
-#' \enumerate {
+#' \enumerate{
 #' \item rate, digitizing rate in Hz
 #' \item format, number of bits per sample (lower 8 bits);
 #' higher order bits are flags: bit 8 = 1 means
