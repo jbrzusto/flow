@@ -43,10 +43,14 @@ exportSweep = function(s, f=".", siteCode="FORCEVC", ares=0.25, sweepNum, append
     } else {
         FlowSweepNum = sweepNum
     }
-    
-    outf = file(file.path(f, sprintf("%s_sweep_%s.dat", siteCode,
-        format(structure(s$ts[1],class=c("POSIXct", "POSIXt")), "%Y-%m-%dT%H:%M:%OS3", tz="GMT"))),
-        if (append) "ab" else "wb")
+
+    if (append && exists("FlowExportFile", 1)) {
+        outf = file(FlowExportFile, "ab")
+    } else {
+        FlowExportFile <<- file.path(f, sprintf("%s_sweep_%s.dat", siteCode,
+            format(structure(s$ts[1],class=c("POSIXct", "POSIXt")), "%Y-%m-%dT%H:%M:%OS3", tz="GMT")))
+        outf = file(FlowExportFile, "wb")
+    }
 
     use = approx(s$azi, 1:nrow(s), seq(from=0, to=1.0, by=ares/360),
         method="constant", rule=1)$y

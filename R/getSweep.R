@@ -53,5 +53,6 @@ getSweep = function(ts, map) {
     params$res = 2.99792458E8 / (2 * params$rate)    ## input range cell size, in metres
 
     attr(rv, "radar.meta") = params
+    class(rv) = c(class(rv), "Sweep")
     return(rv)
 }
