@@ -17,8 +17,11 @@
 #' @param sweepNum: if specified, record this as the sweep number.
 #' Otherwise, use the global variable \code{FlowSweepNum} if that is
 #' set, otherwise, use 1.
+#'
+#' @param append: if TRUE (the default) append binary data if the destination
+#' file already exists.
 #' 
-#' @return TRUE on sucess, FALSE otherwise
+#' @return TRUE on sucess; otherwise fails with an error.
 #'
 #' @note  The output file is organized as one 'line' per pulse.
 #' Each line has this format:
@@ -32,7 +35,7 @@
 #' As a side effect, this function increments the value of the global
 #' variable \code{FlowSweepNum} or sets it to 1 if it does not exist.
 
-exportSweep = function(s, f=".", siteCode="FORCEVC", ares=0.25, sweepNum) {
+exportSweep = function(s, f=".", siteCode="FORCEVC", ares=0.25, sweepNum, append=TRUE) {
     if (missing(sweepNum)) {
         if (! exists("FlowSweepNum", 1)) {
             FlowSweepNum = 1
@@ -42,7 +45,8 @@ exportSweep = function(s, f=".", siteCode="FORCEVC", ares=0.25, sweepNum) {
     }
     
     outf = file(file.path(f, sprintf("%s_sweep_%s.dat", siteCode,
-        format(structure(s$ts[1],class=c("POSIXct", "POSIXt")), "%Y-m-%dT%H:%M:%OS3", tz="GMT"))), "wb")
+        format(structure(s$ts[1],class=c("POSIXct", "POSIXt")), "%Y-%m-%dT%H:%M:%OS3", tz="GMT"))),
+        if (append) "ab" else "wb")
 
     use = approx(s$azi, 1:nrow(s), seq(from=0, to=1.0, by=ares/360),
         method="constant", rule=1)$y
@@ -51,8 +55,9 @@ exportSweep = function(s, f=".", siteCode="FORCEVC", ares=0.25, sweepNum) {
         writeBin(as.integer(c(FlowSweepNum, j)), outf, size=2)  ## sweep number, pulse_no
         writeBin(s$ts[j], outf, size=8) ## ts
         writeBin(s$azi[j], outf, size=4) ## azi
-        writeBin(s$samples[[j]], out) ## raw pulses
+        writeBin(s$samples[[j]], outf) ## raw pulses
     }
     FlowSweepNum <<- FlowSweepNum + 1L
     close(outf)
+    return(TRUE)
 }
