@@ -72,13 +72,18 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd
         use = floor(approx(s$azi, 1:nrow(s), theta, method="constant", f=0.5)$y)
 
         ## drop out-of-range portions
-        use = use[! is.na(use)]
-
+        okay = ! is.na(use)
+        
+        ## NB: we specify the desired azi for each pulse, rather than
+        ## the one actually selected, to avoid problems when a pulse
+        ## is replicated across a few slots due to missing pulses or
+        ## an especially large inter-pulse interval
+        azi = theta[okay]           
+        use = use[okay]
         np = length(use)
         
         d = matrix(readBin(unlist(s$samples[use]), integer(), size=2, signed=FALSE, n=np * ns), ns, np)
 
-        azi = s$azi[use]
         
     } else {
         stop("FIXME: values for azimode other than 'nearest' not yet implemented")

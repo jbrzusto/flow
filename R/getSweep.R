@@ -41,7 +41,7 @@ getSweep = function(ts, map) {
     if (is.na(f))
         return(NULL)
     con = dbConnect("SQLite", f)
-    swp = dbGetQuery(con, sprintf("select sweep_key from pulses where ts >= %f order by ts limit 1", ts))[1, 1]
+    swp = dbGetQuery(con, sprintf("select sweep_key from pulses where ts >= %.3f order by ts limit 1", ts))[1, 1]
     rv = dbGetQuery(con, sprintf("select ts,trigs,trig_clock,azi,elev,rot,samples from pulses where sweep_key = %d order by ts", swp))
     mode = dbGetQuery(con, sprintf("select mode_key from pulses where sweep_key=%d order by ts limit 1", swp))[1, 1]
     params = unclass(dbGetQuery(con, sprintf("select t2.rate, t2.format, t2.ns, t2.scale from modes as t1 join digitize_modes as t2 on t1.digitize_mode_key = t2.digitize_mode_key where t1.mode_key=%d", mode)))
