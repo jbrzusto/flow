@@ -3,7 +3,7 @@
 
   @param pulses - VECSXP of pulse data, each being a raw vector; samples
                  are assumed to be unsigned little endian 16-bit integers.
-  @param dim - INTSXP of length 2; number of samples, pulses in output matrix
+  @param ng    - INTSXP of length 1; number of pulse groups.
   @param group - INTSXP with same length as pulselist.  Gives the group
                  to which each pulse belongs.  Groups are in the range
                  1..ns  Outside that range means pulse is to be ignored.
@@ -24,14 +24,15 @@
 #include <stdint.h>
 
 SEXP
-filter_pulses (SEXP pulses, SEXP dim, SEXP group, SEXP maxGroupSize, SEXP mode)
+filter_pulses (SEXP pulses, SEXP ng, SEXP group, SEXP maxGroupSize, SEXP mode)
 {
   uint16_t * pp[INTEGER(maxGroupSize)[0]]; // pulse pointers
-  int nr = INTEGER(dim)[0];
-  int nc = INTEGER(dim)[1];
+  int npo = INTEGER(ng)[0]; // number of pulses ("columns") in output (i.e. number of pulse groups)
+  int npi = LENGTH(pulses); // number of pulses in input
+  int ns = LENGTH(VECTOR_ELT(pulses, 0)) / 2; // number of samples ("rows") in input and output (16-bits each)
 
   SEXP rv;
-  PROTECT(rv = allocVector(REALSXP, nr * nc));
+  PROTECT(rv = allocVector(REALSXP, npo * ns));
   int m = INTEGER(mode)[0];
 
   int i=0, j=0; // indices into output matrix (i for row, j for col)
@@ -40,7 +41,6 @@ filter_pulses (SEXP pulses, SEXP dim, SEXP group, SEXP maxGroupSize, SEXP mode)
 
   int npg = 0; // number of pulses in current group
 
-  int np = LENGTH(pulses); // number of pulses
 
   int * g = INTEGER(group); // pointer to group numbers
 
@@ -48,25 +48,25 @@ filter_pulses (SEXP pulses, SEXP dim, SEXP group, SEXP maxGroupSize, SEXP mode)
 
   int lastGroup;
 
-  for (i = 0; i < nr && ip < np; /**/) {
+  for (i = 0; i < npo && ip < npi; /**/) {
     // accumulate the pulses for a group
     lastGroup = g[ip];
-    for (k=0; g[ip] == lastGroup && ip < np; ++ip, ++k)
+    for (k=0; g[ip] == lastGroup && ip < npi; ++ip, ++k)
       pp[k] = (uint16_t *) RAW(VECTOR_ELT(pulses, ip));
 
-    if (lastGroup >= 1 && lastGroup <= np) {
+    if (lastGroup >= 1 && lastGroup <= npo) {
 
       npg = k; // number of pulses in this group
       // filter this group of pulses into a single output
       if (m == 0 || npg == 1) {
         // copy first pulse; also do this if there's only 
         // one pulse in this group
-        for (j = 0; j < nc; ++j)
+        for (j = 0; j < ns; ++j)
           *out++ = pp[0][j];
 
       } else if (m == 1) {
         // get mean
-        for (j = 0; j < nc; ++j) {
+        for (j = 0; j < ns; ++j) {
           int sum = 0;
           for (k = 0; k < npg; ++k)
             sum += pp[k][j];
@@ -75,7 +75,7 @@ filter_pulses (SEXP pulses, SEXP dim, SEXP group, SEXP maxGroupSize, SEXP mode)
 
       } else if (m == 2) {
         // get mean of all but max
-        for (j = 0; j < nc; ++j) {
+        for (j = 0; j < ns; ++j) {
           int sum, max;
           sum = max = pp[0][j];
           for (k = 1; k < npg; ++k) {
@@ -88,12 +88,12 @@ filter_pulses (SEXP pulses, SEXP dim, SEXP group, SEXP maxGroupSize, SEXP mode)
       }
       ++i; // we've processed a row of output
     }
-    ++ip;
+    //    ++ip;
   }
   SEXP dims;
   PROTECT(dims=allocVector(INTSXP, 2));
-  INTEGER(dims)[0] = nr;
-  INTEGER(dims)[1] = nc;
+  INTEGER(dims)[0] = ns;
+  INTEGER(dims)[1] = npo;
 
   SET_DIM(rv, dims);
   UNPROTECT(2);
