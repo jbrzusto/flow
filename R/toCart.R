@@ -3,6 +3,7 @@
 #' From a sweep of radar data as returned by \code{getSweep()}, use
 #' bicubic spline interpolation on the polar coordinate side to
 #' generate a Cartesian raster of radar reflection intensities.
+#' 
 #'
 #' @param sweep: raw sweep object, as returned by \code{getSweep()}
 #' 
@@ -24,12 +25,14 @@
 #' subselected or averaged according to the \code{mode} parameter.  If the sweep
 #' has fewer pulses than required, they are replicated.  Default: 0.25 degrees
 #'
-#' @param azimode: character scalar "nearest" or "mean".  Determines how data are reduced
-#' to the desired \code{azires}.  The default, "nearest", means the closest pulse to
-#' the dsired output azimuth is used.  For "mean", input pulses are grouped with their
-#' closest output azimuth, and averaged within these groups.  "median" applies the
-#' same grouping as "mean", but chooses the median rather than average sample value
-#' at each range slot.  FIXME: "mean" and "median" are not yet implemented.
+#' @param azimode: character scalar "nearest", "mean", or
+#' "mean_no_max".  Determines how data are reduced to the desired
+#' \code{azires}.  The default, "nearest", means the closest pulse to
+#' the desired output azimuth is used.  For "mean", input pulses are
+#' grouped with their closest output azimuth, and averaged within
+#' these groups.  "mean_no_max" applies the same grouping as "mean",
+#' but discards the maximum sample value at each range-slot before
+#' taking the mean, thereby eliminating foreign radar pulses.
 #'
 #' @param bkgd: numeric value to return in portion of matrix outside of radar data.
 #' Default: 0.
@@ -48,6 +51,7 @@
 ##
 
 toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd=0) {
+    
     ## meta data
     meta = attr(s, "radar.meta")
     
@@ -84,13 +88,23 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd
         
         d = matrix(readBin(unlist(s$samples[use]), integer(), size=2, signed=FALSE, n=np * ns), ns, np)
 
-        
-    } else {
-        stop("FIXME: values for azimode other than 'nearest' not yet implemented")
-    }
+        meta$ts = s$ts[c(use[1], tail(use, 1))]
 
-    meta$ts = s$ts[c(use[1], tail(use, 1))]
-    
+    } else {
+        ## split pulses into groups by proximity to desired azimuths
+        pulseGroup = as.integer(round(approx(theta, 1:length(theta), s$azi, method="linear")$y))
+        azi = theta[pulseGroup[1]:tail(pulseGroup, 1)]
+        pulseGroup = pulseGroup - (pulseGroup[1] - 1L)
+        d = .Call("filter_pulses", s$samples, length(azi), pulseGroup, as.integer(nrow(s) / length(azi) * 3),
+            if (azimode == "mean") {
+                1L
+            } else if (azimode == "mean_no_max") {
+                2L
+            })
+
+        meta$ts = approx(s$azi, s$ts, azi, method="linear")$y
+    }
+        
     ## we now have a matrix d with raw values for ns samples in each of np pulses,
     ## where pulse azimuths are in azi and range cell centres are in range
 

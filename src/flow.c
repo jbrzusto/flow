@@ -10,8 +10,8 @@
                  Groups must be consecutive.
   @param maxGroupSize - INTSXP of length 1; maximum number of pulses in 
                  a group.
-  @param mode - INTSXP of length 1;  0 means first pulse; 1 means mean;
-                2 means mean of all but max;
+  @param mode - INTSXP of length 1 indicating summary type:  1=mean; 2=mean of all but max
+
   @return numeric matrix of dimensions ns x np 
 
 */
@@ -58,9 +58,8 @@ filter_pulses (SEXP pulses, SEXP ng, SEXP group, SEXP maxGroupSize, SEXP mode)
 
       npg = k; // number of pulses in this group
       // filter this group of pulses into a single output
-      if (m == 0 || npg == 1) {
-        // copy first pulse; also do this if there's only 
-        // one pulse in this group
+      if (npg == 1) {
+        // copy pulse if there is only one in group
         for (j = 0; j < ns; ++j)
           *out++ = pp[0][j];
 
@@ -88,8 +87,8 @@ filter_pulses (SEXP pulses, SEXP ng, SEXP group, SEXP maxGroupSize, SEXP mode)
       }
       ++i; // we've processed a row of output
     }
-    //    ++ip;
   }
+
   SEXP dims;
   PROTECT(dims=allocVector(INTSXP, 2));
   INTEGER(dims)[0] = ns;
