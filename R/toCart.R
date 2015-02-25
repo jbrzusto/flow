@@ -4,26 +4,26 @@
 #' bicubic spline interpolation on the polar coordinate side to
 #' generate a Cartesian raster of radar reflection intensities.
 #' 
-#'
 #' @param sweep: raw sweep object, as returned by \code{getSweep()}
 #' 
-#' @param xlim: 2-element real vector; range of east/west coordinates in metres.
-#' \code{xlim[1]} is the minimum and \code{xlim[2]} is the maximum.
-#' These are offsets relative to the radar's x position. Negative is west, positive
-#' is east.
+#' @param xlim: 2-element real vector; range of east/west coordinates
+#' in metres.  \code{xlim[1]} is the minimum and \code{xlim[2]} is the
+#' maximum.  These are offsets relative to the radar's x
+#' position. Negative is west, positive is east.
 #' 
-#' @param ylim: 2-element real vector; range of north/south coordinates in metres.
-#' \code{ylim[1]} is the minimum and \code{ylim[2]} is the maximum.
-#' These are offsets relative to the radar's y position. Negative is south, positive
-#' is north.
+#' @param ylim: 2-element real vector; range of north/south
+#' coordinates in metres.  \code{ylim[1]} is the minimum and
+#' \code{ylim[2]} is the maximum.  These are offsets relative to the
+#' radar's y position. Negative is south, positive is north.
 #'
-#' @param res: real scalar; desired resolution for output grid, in metres.  This
-#' is used for both x and y directions.  Default: 3.6 m
+#' @param res: real scalar; desired resolution for output grid, in
+#' metres.  This is used for both x and y directions.  Default: 3.6 m
 #' 
 #' @param azires: real scalar; desired angular resolution from input
-#' data, in degrees. If the sweep has pulses spaced more closely than desired, they are
-#' subselected or averaged according to the \code{mode} parameter.  If the sweep
-#' has fewer pulses than required, they are replicated.  Default: 0.25 degrees
+#' data, in degrees. If the sweep has pulses spaced more closely than
+#' desired, they are subselected or averaged according to the
+#' \code{mode} parameter.  If the sweep has fewer pulses than
+#' required, they are replicated.  Default: 0.25 degrees
 #'
 #' @param azimode: character scalar "nearest", "mean", or
 #' "mean_no_max".  Determines how data are reduced to the desired
@@ -34,23 +34,39 @@
 #' but discards the maximum sample value at each range-slot before
 #' taking the mean, thereby eliminating foreign radar pulses.
 #'
+#' @param interp: character scalar; interpolation mode.  Default,
+#' "bicubic", is slow but good for low-noise data.  "none" just copies
+#' the sample from the closest range cell and azimuth, and is the
+#' fastest.
+#' 
 #' @param bkgd: numeric value to return in portion of matrix outside of radar data.
 #' Default: 0.
+#'
+#' @param cache: environment.  If not \code{NULL}, this is a place to
+#' store indexes between repeated calls to \code{toCart} with the same
+#' parameter values but different sweep data.  On the first call for a
+#' sequence of sweeps, pass a variable which has been assigned a new
+#' (empty) environment, e.g. \code{cc <- new.env(); x=toCart(...,
+#' cache=cc)}, and then pass the same variable for cache on subsequent
+#' calls.  This will speed up conversions by a factor of 20 or so.
+#' The cache is only used when \code{interp == "none"}
 #' 
-#' @return numeric matrix; dimensions are \code{ceil(diff(range(ylim)) / res} rows
-#' by \code{ceil(diff(range(xlim)) / res} columns.  Values are interpolated data values
-#' within the range of radar data, and \code{bkgd} outside there.  Each column is
-#' a strip of image going from North to South, and the matrix consists of data columns
-#' going from West to East.  Also, the matrix has a \code{radar.meta} attribute.  This is
-#' a copy of that of \code{sweep} but adds a new item, \code{ts}, which is a two-element
-#' vector giving the timestamps for the first and last pulse in the sweep.
+#' @return numeric matrix; dimensions are \code{ceil(diff(range(ylim))
+#' / res} rows by \code{ceil(diff(range(xlim)) / res} columns.  Values
+#' are interpolated data values within the range of radar data, and
+#' \code{bkgd} outside there.  Each column is a strip of image going
+#' from North to South, and the matrix consists of data columns going
+#' from West to East.  Also, the matrix has a \code{radar.meta}
+#' attribute.  This is a copy of that of \code{sweep} but adds a new
+#' item, \code{ts}, which is a two-element vector giving the
+#' timestamps for the first and last pulse in the sweep.
 #' 
 #' @note Requires that library akima already be loaded.
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 ##
 
-toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd=0) {
+toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", interp="bicubic", bkgd=0, cache=NULL) {
     
     ## meta data
     meta = attr(s, "radar.meta")
@@ -109,34 +125,86 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd
     ## where pulse azimuths are in azi and range cell centres are in range
 
     ## set up the output grid locations, relative to radar location
-
+    
     xgrid = seq(from = xlim[1], to = xlim[2], by = res)
-
+    
     ## Note: reverse order of y axis so that matrix columns go from north to south.
     ygrid = seq(from = ylim[2], to = ylim[1], by = -res)
-
-    ## output matrix size
+    
+    ## create output matrix with default background
     nx = length(xgrid)
     ny = length(ygrid)
-
-    ## replicate the output coordinates for each valid point, varying x faster
-    xout = rep(xgrid, each = ny)
-    yout = rep(ygrid, times = nx)
-
-    ## range of all desired output points
-    rangeout = sqrt(xout^2 + yout^2)
-    
-    ## azimuth of all desired output points on scale of 0..1
-    aziout = ((pi / 2 - (meta$heading * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
-
-    keep = which(rangeout <= max(range) & aziout >= azi[1] & aziout <= tail(azi,1))
-
-    ## interpolate
-    z = bicubic(range, azi, d, rangeout[keep], aziout[keep])$z
-
     rv = matrix(bkgd, ny, nx)
-    rv[keep] = z
 
+    ## interpolate using the requested method
+
+    switch (interp,
+            bicubic = {
+                ## replicate the output coordinates for each valid point, varying x faster
+                xout = rep(xgrid, each = ny)
+                yout = rep(ygrid, times = nx)
+
+                ## range of all desired output points
+                rangeout = sqrt(xout^2 + yout^2)
+                
+                ## azimuth of all desired output points on scale of 0..1
+                aziout = ((pi / 2 - (meta$heading * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
+
+                keep = which(rangeout <= max(range) & aziout >= azi[1] & aziout <= tail(azi,1))
+
+                ## interpolate
+                z = bicubic(range, azi, d, rangeout[keep], aziout[keep])$z
+
+                rv[keep] = z
+                
+            },
+            none = {
+                if (is.null(cache))
+                    cache = new.env()
+
+                par = list(
+                    xlim = xlim,
+                    ylim = ylim,
+                    res = res,
+                    azimin = azi[1],
+                    azimax = tail(azi, 1),
+                    azilen = length(azi),
+                    rangemin = range[1],
+                    rangemax = tail(range, 1),
+                    rangelen = length(range)
+                    )
+                    
+                if (is.null(cache$rhs) || ! identical(par, cache$par)) {
+                    ## cache the parameter list, for sanity checks
+                    cache$par = par
+                    
+                    ## replicate the output coordinates for each valid point, varying x faster
+                    xout = rep(xgrid, each = ny)
+                    yout = rep(ygrid, times = nx)
+                    
+                    ## range of all desired output points
+                    rangeout = sqrt(xout^2 + yout^2)
+                
+                    ## azimuth of all desired output points on scale of 0..1
+                    aziout = ((pi / 2 - (meta$heading * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
+
+                    ## linear indexes for destination array
+                    cache$lhs = which(rangeout <= par$rangemax & aziout >= par$azimin & aziout <= par$azimax)
+                    
+                    ## map aziout to closest input azimuth index
+                    aziind = 1 + (aziout[cache$lhs] - par$azimin) * ((length(azi) - 1) / (par$azimax - par$azimin))
+                    
+                    ## map rangeout to closest input range index
+                    rangeind = 1 + (rangeout[cache$lhs] - par$rangemin) * ((length(range) - 1) / (par$rangemax - par$rangemin))
+
+                    ## linear indexes for source array
+                    cache$rhs = as.integer(rangeind + round(aziind) * length(range))
+                }
+                ## use (now) cached values of linear indexes on left and right               
+                rv[cache$lhs] = d[cache$rhs]
+            }
+            )
+    
     attr(rv, "radar.meta") = meta
 
     return(rv)
