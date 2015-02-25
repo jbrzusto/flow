@@ -166,8 +166,8 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", inte
                     xlim = xlim,
                     ylim = ylim,
                     res = res,
-                    azimin = azi[1],
-                    azimax = tail(azi, 1),
+                    azimin = round(azi[1], 3),
+                    azimax = round(tail(azi, 1), 3),
                     azilen = length(azi),
                     rangemin = range[1],
                     rangemax = tail(range, 1),
@@ -192,13 +192,13 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", inte
                     cache$lhs = which(rangeout <= par$rangemax & aziout >= par$azimin & aziout <= par$azimax)
                     
                     ## map aziout to closest input azimuth index
-                    aziind = 1 + (aziout[cache$lhs] - par$azimin) * ((length(azi) - 1) / (par$azimax - par$azimin))
+                    aziind = floor(1 + (aziout[cache$lhs] - par$azimin) * ((length(azi) - 1) / (par$azimax - par$azimin)))
                     
                     ## map rangeout to closest input range index
-                    rangeind = 1 + (rangeout[cache$lhs] - par$rangemin) * ((length(range) - 1) / (par$rangemax - par$rangemin))
+                    rangeind = floor(1 + (rangeout[cache$lhs] - par$rangemin) * ((length(range) - 1) / (par$rangemax - par$rangemin)))
 
                     ## linear indexes for source array
-                    cache$rhs = as.integer(rangeind + round(aziind) * length(range))
+                    cache$rhs = as.integer(rangeind + aziind * length(range))
                 }
                 ## use (now) cached values of linear indexes on left and right               
                 rv[cache$lhs] = d[cache$rhs]
