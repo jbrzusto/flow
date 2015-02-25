@@ -29,6 +29,7 @@ export (
     rbow,
     repAlong,
     scanFolder,
+    timeRange,
     toCart,
     zero_pad
     )
