@@ -73,8 +73,11 @@ predictTide = function(
                 timezone,
                 if (hourly) 1 else 2
                 ),
+            error = function(...) {}, ## ignore parse errors
+            addFinalizer = FALSE,
+            isHTML = TRUE,
             useInternalNodes = TRUE)
-
+        
         if (hourly) {
             reply = c(reply, do.call(paste, c(lapply(getNodeSet(x, "//td[not(@class)]")[1:(7*24)], xmlValue), sep=",")))
             nhr = nhr + 7 * 24
@@ -84,7 +87,7 @@ predictTide = function(
         ti = ti + 7 * 24 * 3600
     }
     ## concatenate all lines together
-    reply = paste(reply, collapse="")
+    reply = paste(reply, collapse=",")
 
     if (hourly) {
         ## parse hourly heights
