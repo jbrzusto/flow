@@ -51,7 +51,7 @@ findGoodSweeps = function(ts, map, len, minPulses, aziRange, persist = TRUE) {
 
     ## open a new connection if we didn't re-use a persistent one
     if (is.null(con)) {
-        con = dbConnect("SQLite", f, flags=1L) ## open read-only
+        con = dbConnect(RSQLite::SQLite(), f, flags=1L) ## open read-only
         if (persist) {
             ## retain for later use
             env$con = con

@@ -26,7 +26,7 @@ scanFolder = function(folder, pattern="^FORCEVC_raw.*[.]sqlite$") {
 
     i = 0
     for (f in files) {
-        con = dbConnect("SQLite", f)
+        con = dbConnect(RSQLite::SQLite(), f)
         if (dbExistsTable(con, "pulses")) {
             ## get time range for pulses in this file
             ## Note: for some reason, doing this as the single query
