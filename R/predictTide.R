@@ -48,14 +48,14 @@ predictTide = function(
 
     if (hourly) {
         start2 = trunc(start, "day")     ## truncate down to closest day
-        end2 = round(end + 1800, "hour") ## round up to closest hour
+        end2 = roundUpTS(end, "hour")    ## round up to closest hour
     } else {
         start2 = start - 24 * 3600       ## back one day
         end2 = end + 24 * 3600           ## forward one day
     }
 
     ## reply strings from the server
-    reply = ""
+    reply = character(0)
 
     ## number of hourly readings, for scan
     nhr = 0

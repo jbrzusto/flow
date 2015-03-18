@@ -30,6 +30,7 @@ export (
     rad,
     rbow,
     repAlong,
+    roundUpTS,
     scanFolder,
     timeRange,
     toCart,

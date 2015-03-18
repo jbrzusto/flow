@@ -1,5 +1,5 @@
 Package: flow
-Version: 1.0.4
+Version: 1.0.5
 Title: Estimate Currents from Radar Data
 Description: Use dispersion analysis to estimate surface currents from radar
     reflectivity data.
