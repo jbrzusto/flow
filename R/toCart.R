@@ -34,6 +34,9 @@
 #' but discards the maximum sample value at each range-slot before
 #' taking the mean, thereby eliminating foreign radar pulses.
 #'
+#' @param interp: character scalar; interpolation mode.  Default, "bicubic", is slow but good for
+#' low-noise data.  "linear" is the faster. "nearest" is the fastest.
+#' 
 #' @param bkgd: numeric value to return in portion of matrix outside of radar data.
 #' Default: 0.
 #' 
@@ -50,7 +53,7 @@
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 ##
 
-toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd=0) {
+toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", interp="bicubic", bkgd=0, cache=NULL) {
     
     ## meta data
     meta = attr(s, "radar.meta")
@@ -109,34 +112,72 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", bkgd
     ## where pulse azimuths are in azi and range cell centres are in range
 
     ## set up the output grid locations, relative to radar location
-
+    
     xgrid = seq(from = xlim[1], to = xlim[2], by = res)
-
+    
     ## Note: reverse order of y axis so that matrix columns go from north to south.
     ygrid = seq(from = ylim[2], to = ylim[1], by = -res)
-
-    ## output matrix size
+    
+    ## create output matrix with default background
     nx = length(xgrid)
     ny = length(ygrid)
-
-    ## replicate the output coordinates for each valid point, varying x faster
-    xout = rep(xgrid, each = ny)
-    yout = rep(ygrid, times = nx)
-
-    ## range of all desired output points
-    rangeout = sqrt(xout^2 + yout^2)
-    
-    ## azimuth of all desired output points on scale of 0..1
-    aziout = ((pi / 2 - (meta$heading * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
-
-    keep = which(rangeout <= max(range) & aziout >= azi[1] & aziout <= tail(azi,1))
-
-    ## interpolate
-    z = bicubic(range, azi, d, rangeout[keep], aziout[keep])$z
-
     rv = matrix(bkgd, ny, nx)
-    rv[keep] = z
 
+    ## interpolate using the requested method
+
+    switch (interp,
+            bicubic = {
+                ## replicate the output coordinates for each valid point, varying x faster
+                xout = rep(xgrid, each = ny)
+                yout = rep(ygrid, times = nx)
+
+                ## range of all desired output points
+                rangeout = sqrt(xout^2 + yout^2)
+                
+                ## azimuth of all desired output points on scale of 0..1
+                aziout = ((pi / 2 - (meta$heading * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
+
+                keep = which(rangeout <= max(range) & aziout >= azi[1] & aziout <= tail(azi,1))
+
+                ## interpolate
+                z = bicubic(range, azi, d, rangeout[keep], aziout[keep])$z
+
+                rv[keep] = z
+                
+            },
+            linear = {
+                if (is.null(env))
+                    env = new.env()
+                if (is.null(env$rhs)) {
+                    ## replicate the output coordinates for each valid point, varying x faster
+                    xout = rep(xgrid, each = ny)
+                    yout = rep(ygrid, times = nx)
+                    
+                    ## range of all desired output points
+                    rangeout = sqrt(xout^2 + yout^2)
+                
+                    ## azimuth of all desired output points on scale of 0..1
+                    aziout = ((pi / 2 - (meta$heading * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
+
+                    azimin = azi[1]
+                    azimax = tail(azi, 1)
+                    rangemin = range[1]
+                    rangemax = tail(range, 1)
+                    
+                    env$keep = which(rangeout <= rangemax & aziout >= azimin & aziout <= azimax)
+                    
+                    ## map aziout to closest input azimuth index
+                    aziind = 1 + (aziout[keep] - azimin) * ((length(azi) - 1) / (azimax - azimin))
+                    
+                    ## map rangeout to closest input range index
+                    rangeind = 1 + (rangeout[keep] - rangemin) * ((length(range) - 1) / (rangemax - rangemin))
+
+                    env$rhs = as.integer(rangeind + aziind * length(range))
+                }
+                rv[env$keep] = d[env$rhs]
+            }
+            )
+    
     attr(rv, "radar.meta") = meta
 
     return(rv)
