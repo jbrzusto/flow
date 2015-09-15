@@ -34,10 +34,8 @@
 #' but discards the maximum sample value at each range-slot before
 #' taking the mean, thereby eliminating foreign radar pulses.
 #'
-#' @param interp: character scalar; interpolation mode.  Default,
-#' "bicubic", is slow but good for low-noise data.  "none" just copies
-#' the sample from the closest range cell and azimuth, and is the
-#' fastest.
+#' @param interp: character scalar; interpolation mode.  Default, "bicubic", is slow but good for
+#' low-noise data.  "linear" is the faster. "nearest" is the fastest.
 #' 
 #' @param bkgd: numeric value to return in portion of matrix outside of radar data.
 #' Default: 0.
@@ -158,26 +156,10 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", inte
                 rv[keep] = z
                 
             },
-            none = {
-                if (is.null(cache))
-                    cache = new.env()
-
-                par = list(
-                    xlim = xlim,
-                    ylim = ylim,
-                    res = res,
-                    azimin = round(azi[1], 3),
-                    azimax = round(tail(azi, 1), 3),
-                    azilen = length(azi),
-                    rangemin = range[1],
-                    rangemax = tail(range, 1),
-                    rangelen = length(range)
-                    )
-                    
-                if (is.null(cache$rhs) || ! identical(par, cache$par)) {
-                    ## cache the parameter list, for sanity checks
-                    cache$par = par
-                    
+            linear = {
+                if (is.null(env))
+                    env = new.env()
+                if (is.null(env$rhs)) {
                     ## replicate the output coordinates for each valid point, varying x faster
                     xout = rep(xgrid, each = ny)
                     yout = rep(ygrid, times = nx)
@@ -188,20 +170,22 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", inte
                     ## azimuth of all desired output points on scale of 0..1
                     aziout = ((pi / 2 - (meta$heading * pi/180) - atan2(yout, xout)) %% (2 * pi)) / (2 * pi)
 
-                    ## linear indexes for destination array
-                    cache$lhs = which(rangeout <= par$rangemax & aziout >= par$azimin & aziout <= par$azimax)
+                    azimin = azi[1]
+                    azimax = tail(azi, 1)
+                    rangemin = range[1]
+                    rangemax = tail(range, 1)
+                    
+                    env$keep = which(rangeout <= rangemax & aziout >= azimin & aziout <= azimax)
                     
                     ## map aziout to closest input azimuth index
-                    aziind = floor(1 + (aziout[cache$lhs] - par$azimin) * ((length(azi) - 1) / (par$azimax - par$azimin)))
+                    aziind = 1 + (aziout[keep] - azimin) * ((length(azi) - 1) / (azimax - azimin))
                     
                     ## map rangeout to closest input range index
-                    rangeind = floor(1 + (rangeout[cache$lhs] - par$rangemin) * ((length(range) - 1) / (par$rangemax - par$rangemin)))
+                    rangeind = 1 + (rangeout[keep] - rangemin) * ((length(range) - 1) / (rangemax - rangemin))
 
-                    ## linear indexes for source array
-                    cache$rhs = as.integer(rangeind + aziind * length(range))
+                    env$rhs = as.integer(rangeind + aziind * length(range))
                 }
-                ## use (now) cached values of linear indexes on left and right               
-                rv[cache$lhs] = d[cache$rhs]
+                rv[env$keep] = d[env$rhs]
             }
             )
     
