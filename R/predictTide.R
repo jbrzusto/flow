@@ -65,7 +65,7 @@ predictTide = function(
     
     ## query the server
     while (ti < end2) {
-        x = xmlTreeParse(
+        x = htmlTreeParse(
             sprintf(
                 "http://tides.gc.ca/eng/station?type=0&date=%s&sid=%d&tz=%s&pres=%d",
                 format(ti, "%Y%%2F%m%%2F%d"),  ## '%%2F' is the URL-encoded '/'

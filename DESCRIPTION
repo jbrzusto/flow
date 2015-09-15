@@ -1,5 +1,5 @@
 Package: flow
-Version: 1.0.5
+Version: 1.0.6
 Title: Estimate Currents from Radar Data
 Description: Use dispersion analysis to estimate surface currents from radar
     reflectivity data.
@@ -11,7 +11,8 @@ Depends:
     lubridate,
     DBI,
     RSQLite,
-    akima
+    akima,
+    magrittr
 Imports:
     RUnit
 License: GPL-2+

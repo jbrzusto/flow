@@ -8,6 +8,7 @@ export (
     correct_range_dependence,
     deg,
     exportSweep,
+    exportWamos,
     estimate_currents,
     estimate_radial_currents,
     estimate_range_equalizer,
