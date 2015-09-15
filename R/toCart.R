@@ -4,26 +4,26 @@
 #' bicubic spline interpolation on the polar coordinate side to
 #' generate a Cartesian raster of radar reflection intensities.
 #' 
-#'
 #' @param sweep: raw sweep object, as returned by \code{getSweep()}
 #' 
-#' @param xlim: 2-element real vector; range of east/west coordinates in metres.
-#' \code{xlim[1]} is the minimum and \code{xlim[2]} is the maximum.
-#' These are offsets relative to the radar's x position. Negative is west, positive
-#' is east.
+#' @param xlim: 2-element real vector; range of east/west coordinates
+#' in metres.  \code{xlim[1]} is the minimum and \code{xlim[2]} is the
+#' maximum.  These are offsets relative to the radar's x
+#' position. Negative is west, positive is east.
 #' 
-#' @param ylim: 2-element real vector; range of north/south coordinates in metres.
-#' \code{ylim[1]} is the minimum and \code{ylim[2]} is the maximum.
-#' These are offsets relative to the radar's y position. Negative is south, positive
-#' is north.
+#' @param ylim: 2-element real vector; range of north/south
+#' coordinates in metres.  \code{ylim[1]} is the minimum and
+#' \code{ylim[2]} is the maximum.  These are offsets relative to the
+#' radar's y position. Negative is south, positive is north.
 #'
-#' @param res: real scalar; desired resolution for output grid, in metres.  This
-#' is used for both x and y directions.  Default: 3.6 m
+#' @param res: real scalar; desired resolution for output grid, in
+#' metres.  This is used for both x and y directions.  Default: 3.6 m
 #' 
 #' @param azires: real scalar; desired angular resolution from input
-#' data, in degrees. If the sweep has pulses spaced more closely than desired, they are
-#' subselected or averaged according to the \code{mode} parameter.  If the sweep
-#' has fewer pulses than required, they are replicated.  Default: 0.25 degrees
+#' data, in degrees. If the sweep has pulses spaced more closely than
+#' desired, they are subselected or averaged according to the
+#' \code{mode} parameter.  If the sweep has fewer pulses than
+#' required, they are replicated.  Default: 0.25 degrees
 #'
 #' @param azimode: character scalar "nearest", "mean", or
 #' "mean_no_max".  Determines how data are reduced to the desired
@@ -39,14 +39,25 @@
 #' 
 #' @param bkgd: numeric value to return in portion of matrix outside of radar data.
 #' Default: 0.
+#'
+#' @param cache: environment.  If not \code{NULL}, this is a place to
+#' store indexes between repeated calls to \code{toCart} with the same
+#' parameter values but different sweep data.  On the first call for a
+#' sequence of sweeps, pass a variable which has been assigned a new
+#' (empty) environment, e.g. \code{cc <- new.env(); x=toCart(...,
+#' cache=cc)}, and then pass the same variable for cache on subsequent
+#' calls.  This will speed up conversions by a factor of 20 or so.
+#' The cache is only used when \code{interp == "none"}
 #' 
-#' @return numeric matrix; dimensions are \code{ceil(diff(range(ylim)) / res} rows
-#' by \code{ceil(diff(range(xlim)) / res} columns.  Values are interpolated data values
-#' within the range of radar data, and \code{bkgd} outside there.  Each column is
-#' a strip of image going from North to South, and the matrix consists of data columns
-#' going from West to East.  Also, the matrix has a \code{radar.meta} attribute.  This is
-#' a copy of that of \code{sweep} but adds a new item, \code{ts}, which is a two-element
-#' vector giving the timestamps for the first and last pulse in the sweep.
+#' @return numeric matrix; dimensions are \code{ceil(diff(range(ylim))
+#' / res} rows by \code{ceil(diff(range(xlim)) / res} columns.  Values
+#' are interpolated data values within the range of radar data, and
+#' \code{bkgd} outside there.  Each column is a strip of image going
+#' from North to South, and the matrix consists of data columns going
+#' from West to East.  Also, the matrix has a \code{radar.meta}
+#' attribute.  This is a copy of that of \code{sweep} but adds a new
+#' item, \code{ts}, which is a two-element vector giving the
+#' timestamps for the first and last pulse in the sweep.
 #' 
 #' @note Requires that library akima already be loaded.
 #' 

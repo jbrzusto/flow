@@ -21,10 +21,11 @@
 ## represents a time jump of ~2.4 seconds.  Portions of the output
 ## grid not covered by the input data are set to 0.
 
-polar2cart = function(p, rangeScale, outDim, origin = (outDim + 1) / 2, doPlot=FALSE) {
+polar2cart = function(p, azi, rangeScale, outDim, origin = (outDim + 1) / 2, doPlot=FALSE) {
   ## generate theta and r coordinate axes for input matrix, given
 
-  theta_in = (2 * pi / ncol(p)) * 0:(ncol(p)-1)  ## theta = 0 is North (up)
+  theta_in = azi * (2 * pi)  ## theta = 0 is North (up)
+  aziScale = length(azi) / (tail(theta_in, 1) - theta_in[1])
   r_in = 1:nrow(p)
 
   ## x and y coordinates of output grid:
@@ -33,11 +34,11 @@ polar2cart = function(p, rangeScale, outDim, origin = (outDim + 1) / 2, doPlot=F
 
   ## pullback to polar coordinates
   
-  nth = (pi/2 - atan2(ny, nx)) %% (2 * pi)
+  nth = ((pi/2 - atan2(ny, nx)) %% (2 * pi))
   nr = sqrt(nx^2+ny^2)
 
   ## keep track of which locations are covered by input data
-  keep = which(nr <= nrow(p) / rangeScale)
+  keep = which(nr <= nrow(p) / rangeScale & nth >= theta_in[1] & nth <= tail(theta_in,1))
 
   ## for those, use bicubic interpolation in the polar coordinates
   ## to get a z value

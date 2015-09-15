@@ -74,6 +74,8 @@ filter_pulses (SEXP pulses, SEXP ng, SEXP group, SEXP maxGroupSize, SEXP mode)
 
       } else if (m == 2) {
         // get mean of all but max
+        // FIXME: this should be mean of all but max when max is at or near
+        // saturation.  Otherwise, we have a funny low-biasing effect.
         for (j = 0; j < ns; ++j) {
           int sum, max;
           sum = max = pp[0][j];
@@ -86,6 +88,12 @@ filter_pulses (SEXP pulses, SEXP ng, SEXP group, SEXP maxGroupSize, SEXP mode)
         }
       }
       ++i; // we've processed a row of output
+    }
+  }
+  for ( /**/; i < npo; ++i) {
+    // zero remaining output
+    for (j = 0; j < ns; ++j) {
+      *out++ = 0.0;
     }
   }
 
