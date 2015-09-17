@@ -157,9 +157,9 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", inte
                 
             },
             linear = {
-                if (is.null(env))
-                    env = new.env()
-                if (is.null(env$rhs)) {
+                if (is.null(cache))
+                    cache = new.env()
+                if (is.null(cache$rhs)) {
                     ## replicate the output coordinates for each valid point, varying x faster
                     xout = rep(xgrid, each = ny)
                     yout = rep(ygrid, times = nx)
@@ -175,17 +175,17 @@ toCart = function(s, xlim, ylim, res=3.6, azires = 0.25, azimode="nearest", inte
                     rangemin = range[1]
                     rangemax = tail(range, 1)
                     
-                    env$keep = which(rangeout <= rangemax & aziout >= azimin & aziout <= azimax)
+                    cache$keep = which(rangeout <= rangemax & aziout >= azimin & aziout <= azimax)
                     
                     ## map aziout to closest input azimuth index
-                    aziind = 1 + (aziout[keep] - azimin) * ((length(azi) - 1) / (azimax - azimin))
+                    aziind = 1 + (aziout[cache$keep] - azimin) * ((length(azi) - 1) / (azimax - azimin))
                     
                     ## map rangeout to closest input range index
-                    rangeind = 1 + (rangeout[keep] - rangemin) * ((length(range) - 1) / (rangemax - rangemin))
+                    rangeind = 1 + (rangeout[cache$keep] - rangemin) * ((length(range) - 1) / (rangemax - rangemin))
 
-                    env$rhs = as.integer(rangeind + aziind * length(range))
+                    cache$rhs = as.integer(rangeind + aziind * length(range))
                 }
-                rv[env$keep] = d[env$rhs]
+                rv[cache$keep] = d[cache$rhs]
             }
             )
     

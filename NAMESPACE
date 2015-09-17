@@ -35,6 +35,7 @@ export (
     scanFolder,
     timeRange,
     toCart,
+    toImage,
     zero_pad
     )
 

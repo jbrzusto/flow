@@ -16,12 +16,23 @@
 #' is indicated by setting bit 5 of the high byte of the first sample
 #' for a pulse.
 #'
-#' @param aziRange: 2-element vector giving start and end azimuths
+#' @param aziLim: 2-element vector giving start and end azimuths
 #' (each as a fraction in [0, 1] of the sweep starting at the heading
 #' pulse.  If NULL, the whole sweep is present, otherwise, the
-#' azimuths from aziRange[1] to aziRange[2] are present.  If
-#' aziRange[1] > aziRange[2], the pulses wrap around the heading
+#' azimuths from aziLim[1] to aziLim[2] are present.  If
+#' aziLim[1] > aziLim[2], the pulses wrap around the heading
 #' and the missing segment is somewhere in the middle of the sweep.
+#' Because the WAMOS .pol format requires a full sweep, in this situation,
+#' we add padding zero pulses with an appropriate number of 0-1 transitions
+#' on the azimuth pulse flag.
+#'
+#' @param rangeLim: 2-element vector giving start and end ranges of samples,
+#' in metres.  If NULL, the entire pulse is used.  Otherwise, only samples
+#' overlapping the specified range are included.
+#'
+#' @param decim: integer; if 1, use all samples in a pulse, subject to \code{range}, above.
+#' If > 1, then take the last of each sequence of decim consecutive samples, discarding
+#' the rest.  The sampling rate is adjusted accordingly.
 #' 
 #' @return boolean; TRUE if export was successful, FALSE otherwise.
 #' 
@@ -35,7 +46,7 @@ OWNER John Brzustowski  CC OWNER OF PROGRAM\r
 VINFO capture - Version 0.1\r
 VERSN Jul 03 2015 00:00:00 CC COMPILATION DATE AND TIME\r
 TOWER FORCE Visitor Centre\r
-IDENT FVC   CC SHORT IDENTIFIER\r
+IDENT fvc   CC SHORT IDENTIFIER\r
 USER  Bridgemaster E + redpitaya digdar\r
 LAT   045\xb022.281 N   CC [Degree] POSITION NORTH\r
 LONG  064\xb024.167 W   CC [Degree] POSITION EAST\r
@@ -43,21 +54,21 @@ POSTV     0          CC          LAT LONG VALID FLAG\r
 DATE  @DATE\r
 TIME  @TIME\r
 ZONE      0\r
-INTER @INTER CC [min]  TIME INTERVAL\r
-NIPOL @NIPOL CC NUMBER OF POLAR IMAGES\r
-NUMRE @NUMRE CC NUMBER OF RECORDED POLAR IMAGES\r
-RPT   @RPT   CC [sec]  ANTENNA REPETITION TIME\r
-SDRNG @SDRNG CC [m]    SAMPLE DELAY RANGE\r
-SFREQ @SFREQ CC [MHz]  SAMPLING FREQUENCY\r
+INTER @INTER  CC [min]  TIME INTERVAL\r
+NIPOL @NIPOL  CC NUMBER OF POLAR IMAGES\r
+NUMRE @NUMRE  CC NUMBER OF RECORDED POLAR IMAGES\r
+RPT   @RPT  CC [sec]  ANTENNA REPETITION TIME\r
+SDRNG @SDRNG  CC [m]    SAMPLE DELAY RANGE\r
+SFREQ @SFREQ  CC [MHz]  SAMPLING FREQUENCY\r
 FIFO  @FIFO  CC        Number of samples in range\r
-BO2RA @BO2RA CC [deg]  ANGLE BETWEEN BOW AND RADAR HEADING\r
+BO2RA @BO2RA  CC [deg]  ANGLE BETWEEN BOW AND RADAR HEADING\r
 HDGDL   0    CC [deg]  ANGLE BETWEEN ANTENNA HEADING AND PICTURE START\r
-GYROC @GYROC CC [deg]  SHIP'S COMPASS HEADING\r
+GYROC @GYROC  CC [deg]  SHIP'S COMPASS HEADING\r
 GYROV     1  CC        GYROC VALID FLAG\r
 VGAIN     0  CC        WaMoS VIDEOGAIN\r
 CMPOFF    0  CC Offset added to Ship's compass\r
 WDEPF     1  CC Waterdepth from 0=global Waterdepth, 1=NMEA-Data, 2=cartesian Boxes\r
-P_DEP @P_DEP CC [m] Waterdepth-List in meter\r
+P_DEP @P_DEP  CC [m] Waterdepth-List in meter\r
 PDEPV     0  CC        WATER DEPTH VALID FLAG\r
 SHIPR     0  CC [deg]  SHIP'S GROUND TRACK FROM GPS\r
 SHIRV     0  CC        SHIP GROUND TRACK VALID FLAG\r
@@ -127,7 +138,9 @@ TS = function(x) structure(x, class=class(Sys.time()))
 FMT = function(x, y) if (inherits(x, "POSIXt")) format(x, y) else sprintf(y, x)
 FILLIN = function(s, x, y) sub(paste0("@", x), FMT(y, wamosFormat[[x]]), s, useBytes=TRUE, fixed=TRUE)
 
-exportWamos = function(sweeps, path, depths = 0, nACP=450, aziRange=NULL) {
+VELOCITY_OF_LIGHT = 2.99792458E8
+
+exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeLim = NULL, decim = 1) {
     ## format timestamp of last pulse in first sweep into filename and open it
 
     nsw = length(sweeps)
@@ -145,34 +158,59 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziRange=NULL) {
     ## sweep attributes
     sa = attr(sweeps[[1]], "radar.meta")
 
+    ## samples per pulse in input
+    nsIn = sa$ns
+
     ## repetition period (sweep duration)
     
     RPT = (tsEnd - ts) / (nsw - 1)
 
+    ## sample selector for each pulse; first apply decimation:
+    SSEL = rep(c(rep(FALSE, decim - 1), TRUE), length=nsIn)
+
+    ## number of samples retained per pulse:
+
+    if (is.null(rangeLim)) {
+        range0 = 0
+        ## sample selector: boolean applied to samples in each pulse
+        ## When decimating, take every nth sample 
+    } else {
+        sampleRange = VELOCITY_OF_LIGHT / (sa$rate / decim) / 2
+        S0 = 1 + floor  (rangeLim[1] / sampleRange)
+        range0 = (S0 - 1) * sampleRange
+        SN = ceiling(rangeLim[2] / sampleRange)
+        ## sample selector: remove any samples out of the range
+        if (S0 > 1)
+            SSEL[1:(S0-1)] = FALSE
+        if (SN < nsIn)
+            SSEL[(SN + 1) : nsIn] = FALSE
+    }
+    nsOut = sum(SSEL)
+    
     ## if we don't have full sweeps, pad with zero pulses and
     ## appropriate numbers of heading pulses
 
-    if (is.null(aziRange)) {
+    if (is.null(aziLim)) {
         ## number of extra bytes to write
         padLength = 0
     } else {
         ## a pair of padding pulses with a single ACP pulse (1 then 0)
         ## 2 pulses times 2 bytes per sample times num samples
-        padACP = raw(2 * 2 * sa$ns)
+        padACP = raw(2 * 2 * nsOut)
         ## set bit 5 of high byte of first sample in first pulse
         padACP[2] = as.raw(32)
         
-        if (diff(aziRange) > 0) {
+        if (diff(aziLim) > 0) {
             ## usual situation: no zero crossing; must pad at
             ## start and end of included area
             padEnds = TRUE
             ## pulse bytes to include before start
             ## of real data
-            prePad = rep(padACP, times = floor(nACP * aziRange[1]))
+            prePad = rep(padACP, times = floor(nACP * aziLim[1]))
 
             ## pulse bytes to include after start
             ## of real data
-            postPad = rep(padACP, times = nACP - floor(nACP * aziRange[2]))
+            postPad = rep(padACP, times = nACP - floor(nACP * aziLim[2]))
             padLength = length(prePad) + length(postPad)
         } else {
             ## only pad in middle; real sweep data at start
@@ -181,10 +219,11 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziRange=NULL) {
 
             ## pulse bytes to insert between first and second segments
             ## of sweep
-            midPad = rep(padACP, - diff(floor(nACP * aziRange)))
+            midPad = rep(padACP, - diff(floor(nACP * aziLim)))
             padLength = length(midPad)
         }
     }
+
     
     ## make the header by replacing tagged strings with their
     ## formatted items
@@ -197,9 +236,9 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziRange=NULL) {
         %>% FILLIN("NIPOL", nsw - 1               )
         %>% FILLIN("NUMRE", nsw                   )
         %>% FILLIN("RPT",   RPT                   )
-        %>% FILLIN("SDRNG", 0                     )
-        %>% FILLIN("SFREQ", sa$rate / 1E6         )
-        %>% FILLIN("FIFO",  sa$ns                 )  ## number of samples
+        %>% FILLIN("SDRNG", round(range0)         )
+        %>% FILLIN("SFREQ", sa$rate / 1E6 / decim )
+        %>% FILLIN("FIFO",  nsOut                 )  ## number of samples
         %>% FILLIN("BO2RA", FORCEStart - FORCEHdg )
         %>% FILLIN("GYROC", FORCEHdg              )
         %>% FILLIN("P_DEP", depths                )  ## FIXME fails when length(depths) > 1
@@ -247,22 +286,25 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziRange=NULL) {
         ## in 14 bits with existing voltage mapping is ~ 4096.  We've
         ## been adding rather than decimating at low decimation rates.
 
-        nr = nrow(sweeps[[i]])
-        nsamps = sa$ns * nr
-        samps = as.numeric(readBin(unlist(sweeps[[i]]$samples), integer(), size=2, n=nsamps))
+        np = nrow(sweeps[[i]])
+        nsamps = nsIn * nr
 
-        ## number of samples combined into each sample
-        dec = round(125e6 / sa$rate)
+        ## read samples as unsigned integers, and apply the sample selector
+        ## (SSEL gets recycled for each pulse)
+        samps = as.numeric(readBin(unlist(sweeps[[i]]$samples), integer(), size=2, n=nsamps, signed=FALSE)[SSEL])
+
+        ## number of samples combined (by the digitizer) into each sample
+        ddec = round(125e6 / sa$rate)
 
         ## convert to full-scale 12 bit data.
 
-        samps = as.integer(round((samps - (dec * 4096)) / (dec * (16383 - 4096)) * 4095))
+        samps = as.integer(round((samps - (ddec * 4096)) / (ddec * (16383 - 4096)) * 4095))
         
         ## get bearing pulse count at each pulse
         bpc = round(nACP * sweeps[[i]]$azi)
 
         ## which pulses get a bearing pulse
-        tick = c(1, (1 + which(diff(bpc) > 0)) * sa$ns)
+        tick = c(1, (1 + which(diff(bpc) > 0)) * nsOut)
         
         samps[tick] = samps[tick] + 8192L
 
@@ -270,7 +312,7 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziRange=NULL) {
         cat (sprintf("%10d", length(samps) * 2 + padLength), file=f)
 
         ## write raw data, possibly with padding
-        if (is.null(aziRange)) {
+        if (is.null(aziLim)) {
             writeBin(samps, f, size=2, useBytes=TRUE)
         } else {
             if (padEnds) {
@@ -279,8 +321,8 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziRange=NULL) {
                 writeBin(postPad, f, useBytes = TRUE)
             } else {
                 ## number of data pulses that come before padding
-                np = sum(sweeps[[i]]$azi < aziRange[2])
-                init = 1:(sa$ns * np)
+                ninit = sum(sweeps[[i]]$azi < aziLim[2])
+                init = 1:(nsOut * ninit)
                 ## write initial segment
                 writeBin(samps[  init ], f, size=2, useBytes=TRUE)
                 ## write padding
