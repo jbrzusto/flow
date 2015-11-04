@@ -29,7 +29,13 @@ getDepth = function(t) {
                   format(tFrom, ISOfmt),
                   format(tTo, ISOfmt)
                   )
-    d = fromJSON(getURL(url))
+    resp = getURL(url)
+    d = NULL
+    tryCatch({
+        d <<- fromJSON(resp)
+    }, error = function(e) {
+        d <<- list(serviceMetadata=list(totalActualSamples=0))
+    })
     if (d$serviceMetadata$totalActualSamples == 0) {
         ## no data on ONC for this period, so use average of Env. Can tide predictions between
         ## Diligent River (station 247) and Cape Sharpe (station 250)
@@ -41,6 +47,7 @@ getDepth = function(t) {
         ts = as.numeric(dr$ts)
         vals = (dr$height + cs$height) / 2
     } else {
+        d = fromJSON(resp)
         idepth = match("Depth", d$sensorData$sensor)
         ts = as.numeric(ymd_hms(d$sensorData$data$sampleTimes[[idepth]]))
         vals = d$sensorData$data$values[[idepth]]
