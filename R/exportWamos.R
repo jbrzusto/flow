@@ -24,7 +24,10 @@
 #' and the missing segment is somewhere in the middle of the sweep.
 #' Because the WAMOS .pol format requires a full sweep, in this situation,
 #' we add padding zero pulses with an appropriate number of 0-1 transitions
-#' on the azimuth pulse flag.
+#' on the azimuth pulse flag.  We also record the true azimuth (relative
+#' to the heading pulse) of the first digitized pulse, in degrees, in the
+#' heading field HDGDL.  The compass heading angle of the radar is recorded
+#' in GYROC, and BO2RA is set to 0.
 #'
 #' @param rangeLim: 2-element vector giving start and end ranges of samples,
 #' in metres.  If NULL, the entire pulse is used.  Otherwise, only samples
@@ -34,7 +37,7 @@
 #' If > 1, then take the last of each sequence of decim consecutive samples, discarding
 #' the rest.  The sampling rate is adjusted accordingly.
 #' 
-#' @return boolean; TRUE if export was successful, FALSE otherwise.
+#' @return full path to the file written
 #' 
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
@@ -50,50 +53,50 @@ IDENT fvc   CC SHORT IDENTIFIER\r
 USER  Bridgemaster E + redpitaya digdar\r
 LAT   045\xb022.281 N   CC [Degree] POSITION NORTH\r
 LONG  064\xb024.167 W   CC [Degree] POSITION EAST\r
-POSTV     0          CC          LAT LONG VALID FLAG\r
+POSTV     1          CC          LAT LONG VALID FLAG\r
 DATE  @DATE\r
 TIME  @TIME\r
 ZONE      0\r
-INTER @INTER  CC [min]  TIME INTERVAL\r
-NIPOL @NIPOL  CC NUMBER OF POLAR IMAGES\r
-NUMRE @NUMRE  CC NUMBER OF RECORDED POLAR IMAGES\r
-RPT   @RPT  CC [sec]  ANTENNA REPETITION TIME\r
-SDRNG @SDRNG  CC [m]    SAMPLE DELAY RANGE\r
-SFREQ @SFREQ  CC [MHz]  SAMPLING FREQUENCY\r
-FIFO  @FIFO  CC        Number of samples in range\r
-BO2RA @BO2RA  CC [deg]  ANGLE BETWEEN BOW AND RADAR HEADING\r
-HDGDL   0    CC [deg]  ANGLE BETWEEN ANTENNA HEADING AND PICTURE START\r
-GYROC @GYROC  CC [deg]  SHIP'S COMPASS HEADING\r
-GYROV     1  CC        GYROC VALID FLAG\r
-VGAIN     0  CC        WaMoS VIDEOGAIN\r
-CMPOFF    0  CC Offset added to Ship's compass\r
-WDEPF     1  CC Waterdepth from 0=global Waterdepth, 1=NMEA-Data, 2=cartesian Boxes\r
-P_DEP @P_DEP  CC [m] Waterdepth-List in meter\r
-PDEPV     0  CC        WATER DEPTH VALID FLAG\r
-SHIPR     0  CC [deg]  SHIP'S GROUND TRACK FROM GPS\r
-SHIRV     0  CC        SHIP GROUND TRACK VALID FLAG\r
-SHIPS   0.0  CC [kn]   SHIP SPEED OVER GROUND\r
-SHISV     0  CC        SHIP SPEED OVER GROUND VALID FLAG\r
-SPTWL     0  CC [m/s]  LONG SHIP SPEED IN WATER\r
-SPWLV     0  CC        LONG SHIP SPEED IN WATER VALID FLAG\r
-SPTWT     0  CC [m/s]  TRANS SHIP SPEED IN WATER\r
-SPWTV     0  CC        TRANS SHIP SPEED IN WATER VALID FLAG\r
-WINDS     0  CC [m/s]  WIND SPEED\r
-WINSV     0  CC        WIND SPEED VALID FLAG\r
-WINDR     0  CC [deg]  WIND DIRECTION\r
-WINRV     0  CC        WIND DIRECTION VALID FLAG\r
-WINDT     0  CC        0=APPARENT WIND, 1=TRUE WIND\r
-WINDH     0  CC [m]    WIND SENSOR HEIGHT\r
-WATSP     0  CC [m/s]  SPEED THROUGH WATER\r
-WATSV     0  CC        SPEED THROUGH WATER VALID FLAG\r
-DABIT    12  CC        DATA BITS PER PIXEL\r
+INTER @INTER CC [min]  TIME INTERVAL\r
+NIPOL @NIPOL CC NUMBER OF POLAR IMAGES\r
+NUMRE @NUMRE CC NUMBER OF RECORDED POLAR IMAGES\r
+RPT   @RPT CC [sec]  ANTENNA REPETITION TIME\r
+SDRNG @SDRNG CC [m]    SAMPLE DELAY RANGE\r
+SFREQ @SFREQ CC [MHz]  SAMPLING FREQUENCY\r
+FIFO  @FIFO CC        Number of samples in range\r
+BO2RA @BO2RA CC [deg]  ANGLE BETWEEN BOW AND RADAR HEADING\r
+HDGDL   0.0 CC [deg]  ANGLE BETWEEN ANTENNA HEADING AND PICTURE START\r
+GYROC @GYROC CC [deg]  SHIP'S COMPASS HEADING\r
+GYROV     1 CC        GYROC VALID FLAG\r
+VGAIN     0 CC        WaMoS VIDEOGAIN\r
+CMPOFF    0 CC Offset added to Ship's compass\r
+WDEPF     1 CC Waterdepth from 0=global Waterdepth, 1=NMEA-Data, 2=cartesian Boxes\r
+P_DEP @P_DEP CC [m] Waterdepth-List in meter\r
+PDEPV     0 CC        WATER DEPTH VALID FLAG\r
+SHIPR     0 CC [deg]  SHIP'S GROUND TRACK FROM GPS\r
+SHIRV     0 CC        SHIP GROUND TRACK VALID FLAG\r
+SHIPS   0.0 CC [kn]   SHIP SPEED OVER GROUND\r
+SHISV     0 CC        SHIP SPEED OVER GROUND VALID FLAG\r
+SPTWL     0 CC [m/s]  LONG SHIP SPEED IN WATER\r
+SPWLV     0 CC        LONG SHIP SPEED IN WATER VALID FLAG\r
+SPTWT     0 CC [m/s]  TRANS SHIP SPEED IN WATER\r
+SPWTV     0 CC        TRANS SHIP SPEED IN WATER VALID FLAG\r
+WINDS     0 CC [m/s]  WIND SPEED\r
+WINSV     0 CC        WIND SPEED VALID FLAG\r
+WINDR     0 CC [deg]  WIND DIRECTION\r
+WINRV     0 CC        WIND DIRECTION VALID FLAG\r
+WINDT     0 CC        0=APPARENT WIND, 1=TRUE WIND\r
+WINDH     0 CC [m]    WIND SENSOR HEIGHT\r
+WATSP     0 CC [m/s]  SPEED THROUGH WATER\r
+WATSV     0 CC        SPEED THROUGH WATER VALID FLAG\r
+DABIT    12 CC        DATA BITS PER PIXEL\r
 CC     **************** START FRAMEDATA SECTION **************\r
 CC     Date        Time          GYROC  SHIPS  RPT    LAT           LONG         SHIPR WINDS WINDR P_DEP   SPTWL  SPTWT  WATSP \r
 CC                               [deg]  [kn]   [s]                               [deg] [m/s] [deg] [m]     [m/s]  [m/s]  [m/s] \r
 "
 
 wamosTrailer =
-"RPM   @RPM      CC [sec]  ANTENNA REPETITION TIME\r
+"RPM   @RPM CC [sec]  ANTENNA REPETITION TIME\r
 CC     **************** STOP FRAMEDATA SECTION *************\r
 EOH   CC ************ END OF HEADER **************\r
 "
@@ -108,7 +111,7 @@ wamosFormat = list(
     SDRNG = "%5g",
     SFREQ = "%5.1f",
     FIFO  = "%5d",
-    BO2RA = "%5g",
+    BO2RA = "%5.1f",
     GYROC = "%5.1f",
     P_DEP = "%5.1f",
     ## following fields are for the frame table
@@ -116,14 +119,15 @@ wamosFormat = list(
     FTIME = "%H:%M:%OS3",
     FNUM  = "F%04d",
     FRPT  = "%5.3f",
-    RPM   = "%5.2f"
+    RPM   = "%5.2f",
+    FDEP  = "%5.1f"
     )
 
 
 wamosFrameDataLine = 
-"@FNUM @FDATE @FTIME @GYROC 000.0 @FRPT 045\xb022.281 N  064\xb024.167 W  000  000.0  000  0000.0  -09.0  -09.0  -09.0       \r\n"
+"@FNUM @FDATE @FTIME @GYROC 000.0 @FRPT 045\xb022.281 N  064\xb024.167 W  000  000.0  000  @FDEP  -09.0  -09.0  -09.0       \r\n"
 
-wamosFilenameFormat = "%Y%m%d%H%Mfvc.pol"  ## fvc is force visitor centre
+wamosFilenameFormat = "%Y%m%d%H%M%Sfvc.pol"  ## fvc is force visitor centre
 
 FORCEHdg = 136.8 ## heading marker of FORCE VC radar, in degrees
                  ## clockwise from True North.
@@ -135,7 +139,7 @@ FORCEStart = 180 ## true azimuth of first captured pulse; we capture
                  ## degrees from true North.
 
 TS = function(x) structure(x, class=class(Sys.time()))
-FMT = function(x, y) if (inherits(x, "POSIXt")) format(x, y) else sprintf(y, x)
+FMT = function(x, y) if (inherits(x, "POSIXt")) format(x, y) else paste(sprintf(y, x), collapse=" ")
 FILLIN = function(s, x, y) sub(paste0("@", x), FMT(y, wamosFormat[[x]]), s, useBytes=TRUE, fixed=TRUE)
 
 VELOCITY_OF_LIGHT = 2.99792458E8
@@ -149,11 +153,9 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
     ts    = tail(sweeps[[  1]]$ts, 1)
     tsEnd = tail(sweeps[[nsw]]$ts, 1)
     
-    f = ( TS(ts)
-         %>% FMT(wamosFilenameFormat)
-         %>% file.path(path, .)
-         %>% file(., "wb")
-         )
+    fname = TS(ts) %>% FMT(wamosFilenameFormat) %>% file.path(path, .)
+
+    f = file(fname, "wb")
 
     ## sweep attributes
     sa = attr(sweeps[[1]], "radar.meta")
@@ -168,23 +170,22 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
     ## sample selector for each pulse; first apply decimation:
     SSEL = rep(c(rep(FALSE, decim - 1), TRUE), length=nsIn)
 
-    ## number of samples retained per pulse:
-
+    ## apply range limits
+    
     if (is.null(rangeLim)) {
         range0 = 0
-        ## sample selector: boolean applied to samples in each pulse
-        ## When decimating, take every nth sample 
     } else {
-        sampleRange = VELOCITY_OF_LIGHT / (sa$rate / decim) / 2
+        sampleRange = VELOCITY_OF_LIGHT / sa$rate / 2
         S0 = 1 + floor  (rangeLim[1] / sampleRange)
         range0 = (S0 - 1) * sampleRange
         SN = ceiling(rangeLim[2] / sampleRange)
         ## sample selector: remove any samples out of the range
         if (S0 > 1)
-            SSEL[1:(S0-1)] = FALSE
+            SSEL[1:S0] = FALSE
         if (SN < nsIn)
-            SSEL[(SN + 1) : nsIn] = FALSE
+            SSEL[SN:nsIn] = FALSE
     }
+    ## number of samples retained per pulse:
     nsOut = sum(SSEL)
     
     ## if we don't have full sweeps, pad with zero pulses and
@@ -204,14 +205,6 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
             ## usual situation: no zero crossing; must pad at
             ## start and end of included area
             padEnds = TRUE
-            ## pulse bytes to include before start
-            ## of real data
-            prePad = rep(padACP, times = floor(nACP * aziLim[1]))
-
-            ## pulse bytes to include after start
-            ## of real data
-            postPad = rep(padACP, times = nACP - floor(nACP * aziLim[2]))
-            padLength = length(prePad) + length(postPad)
         } else {
             ## only pad in middle; real sweep data at start
             ## and end
@@ -232,16 +225,16 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
         wamosHeader
         %>% FILLIN("DATE",  TS(ts)                )
         %>% FILLIN("TIME",  TS(ts)                )
-        %>% FILLIN("INTER", 15                    )  ## 15 minute sampling interval?
+        %>% FILLIN("INTER", 30                    )  ## 30 minute sampling interval?
         %>% FILLIN("NIPOL", nsw - 1               )
         %>% FILLIN("NUMRE", nsw                   )
         %>% FILLIN("RPT",   RPT                   )
         %>% FILLIN("SDRNG", round(range0)         )
         %>% FILLIN("SFREQ", sa$rate / 1E6 / decim )
         %>% FILLIN("FIFO",  nsOut                 )  ## number of samples
-        %>% FILLIN("BO2RA", FORCEStart - FORCEHdg )
-        %>% FILLIN("GYROC", FORCEHdg              )
-        %>% FILLIN("P_DEP", depths                )  ## FIXME fails when length(depths) > 1
+        %>% FILLIN("BO2RA", FORCEHdg              )  ## compass direction of heading, degrees clockwise from N
+        %>% FILLIN("GYROC", FORCEStart - FORCEHdg )  ## nominal azimuth of first pulse, relative to heading
+        %>% FILLIN("P_DEP", mean(depths)          )  ## mean depth across sweeps
 
         ), file=f)
     
@@ -252,16 +245,17 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
     tsLastEnd = tail(sweeps[[1]]$ts, 1) - (sweeps[[2]]$ts[1] - sweeps[[1]]$ts[1])
 
     for (i in seq(along=sweeps)) {
-        nr = nrow(sweeps[[i]])
-        tsEnd = sweeps[[i]]$ts[nr]
+        np = length(sweeps[[i]]$ts)
+        tsEnd = sweeps[[i]]$ts[np]
         
         cat ((
             wamosFrameDataLine
-            %>% FILLIN("FNUM",  i               )
-            %>% FILLIN("FDATE", TS(tsEnd)       )
-            %>% FILLIN("FTIME", TS(tsEnd)       )
-            %>% FILLIN("GYROC", FORCEHdg        )
-            %>% FILLIN("FRPT",  tsEnd - tsLastEnd )
+            %>% FILLIN("FNUM",  i                        )
+            %>% FILLIN("FDATE", TS(tsEnd)                )
+            %>% FILLIN("FTIME", TS(tsEnd)                )
+            %>% FILLIN("GYROC", sweeps[[i]]$azi[1] * 360 )
+            %>% FILLIN("FRPT",  tsEnd - tsLastEnd        )
+            %>% FILLIN("FDEP",  depths[i]                )
             ), file=f)
         tsLastEnd = tsEnd
     }
@@ -286,8 +280,8 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
         ## in 14 bits with existing voltage mapping is ~ 4096.  We've
         ## been adding rather than decimating at low decimation rates.
 
-        np = nrow(sweeps[[i]])
-        nsamps = nsIn * nr
+        np = length(sweeps[[i]]$ts)
+        nsamps = nsIn * np
 
         ## read samples as unsigned integers, and apply the sample selector
         ## (SSEL gets recycled for each pulse)
@@ -300,22 +294,41 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
 
         samps = as.integer(round((samps - (ddec * 4096)) / (ddec * (16383 - 4096)) * 4095))
         
-        ## get bearing pulse count at each pulse
-        bpc = round(nACP * sweeps[[i]]$azi)
+        ## get bearing pulse count at each pulse; i.e. number of bearing pulses
+        ## which should have been seen before or at this pulse
+        bpc = floor(nACP * sweeps[[i]]$azi)
 
         ## which pulses get a bearing pulse
-        tick = c(1, (1 + which(diff(bpc) > 0)) * nsOut)
-        
+        tick = 1 + which(diff(bpc) > 0)
+
+        ## which sample slots get the bit flag for a bearing pulse
+        tick = 1 + (tick - 1) * nsOut
+
+        ## set the bearing pulse bit
         samps[tick] = samps[tick] + 8192L
 
-        ## write 10-byte byte count
-        cat (sprintf("%10d", length(samps) * 2 + padLength), file=f)
 
         ## write raw data, possibly with padding
         if (is.null(aziLim)) {
+            ## write 10-byte byte count
+            cat (sprintf("%10d", length(samps) * 2), file=f)
             writeBin(samps, f, size=2, useBytes=TRUE)
         } else {
             if (padEnds) {
+                ## add any pulse bytes to include before start
+                ## of real data
+                if (bpc[1] > 0)
+                    prePad = rep(padACP, times = bpc[1])
+                else
+                    prePad = NULL
+                if (tail(bpc, 1) < nACP)
+                    postPad = rep(padACP, times = nACP - tail(bpc, 1))
+                else
+                    postPad = NULL
+                ## write 10-byte byte count
+                padLength = length(prePad) + length(postPad)
+                cat (sprintf("%10d", length(samps) * 2 + padLength), file=f)
+                
                 writeBin(prePad, f, useBytes = TRUE)
                 writeBin(samps, f, size=2, useBytes=TRUE)
                 writeBin(postPad, f, useBytes = TRUE)
@@ -323,6 +336,14 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
                 ## number of data pulses that come before padding
                 ninit = sum(sweeps[[i]]$azi < aziLim[2])
                 init = 1:(nsOut * ninit)
+
+                ## amount of padding (add any missing bpc)
+                midPad = rep(padACP, times = bpc[ninit + 1] - bpc[ninit])
+                padLength = length(midPad)
+
+                ## write 10-byte byte count
+                cat (sprintf("%10d", length(samps) * 2 + padLength), file=f)
+                
                 ## write initial segment
                 writeBin(samps[  init ], f, size=2, useBytes=TRUE)
                 ## write padding
@@ -333,4 +354,5 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
         }
     }        
     close(f)
+    return(fname)
 }
