@@ -14,7 +14,8 @@ Depends:
     akima,
     magrittr,
     RCurl,
-    jsonlite
+    jsonlite,
+    XML
 Imports:
     RUnit
 License: GPL-2+

@@ -32,11 +32,11 @@ getDepth = function(t) {
     resp = getURL(url)
     d = NULL
     tryCatch({
-        d <<- fromJSON(resp)
+        d <- fromJSON(resp)
     }, error = function(e) {
-        d <<- list(serviceMetadata=list(totalActualSamples=0))
+        d <- list(serviceMetadata=list(totalActualSamples=0))
     })
-    if (d$serviceMetadata$totalActualSamples == 0) {
+    if (length(d) == 0 || length(d$serviceMetadata) == 0 || length(d$serviceMetadata$totalActualSamples) == 0 || d$serviceMetadata$totalActualSamples == 0) {
         ## no data on ONC for this period, so use average of Env. Can tide predictions between
         ## Diligent River (station 247) and Cape Sharpe (station 250)
         tlo = tFrom - 7200
