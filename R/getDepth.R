@@ -11,7 +11,7 @@
 #' @return numeric vector of depths, calculcated
 #' using a spline smoother from whatever data are
 #' available in the requested time span
-#' 
+#'
 library(RCurl)
 library(jsonlite)
 
@@ -41,14 +41,14 @@ getDepth = function(t) {
         ## Diligent River (station 247) and Cape Sharpe (station 250)
         tlo = tFrom - 7200
         thi = tTo + 7200
-        
+
         dr = predictTide(start=tlo, end=thi, station=247, hourly=TRUE)
         cs = predictTide(start=tlo, end=thi, station=250, hourly=TRUE)
         ts = as.numeric(dr$ts)
         vals = (dr$height + cs$height) / 2
     } else {
         d = fromJSON(resp)
-        idepth = match("Depth", d$sensorData$sensor)
+        idepth = grep("depth", d$sensorData$sensor, ignore.case=TRUE)
         ts = as.numeric(ymd_hms(d$sensorData$data$sampleTimes[[idepth]]))
         vals = d$sensorData$data$values[[idepth]]
     }
