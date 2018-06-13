@@ -30,7 +30,7 @@
 
 getSweepDigdar = function(f) {
     zcon = gzfile(f, "rb") ## might not be compressed; gzfile() doesn't care
-    hdr = readLines(zcon, 2)
+    hdr = suppressWarnings(readLines(zcon, 2))
     if (! grepl("^DigDar", hdr[1]))
         stop("file is not a DigDar sweep file: ", f)
     meta = fromJSON(hdr[2])
