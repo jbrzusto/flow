@@ -18,6 +18,7 @@ export (
     getDepth,
     getRuns,
     getSweep,
+    getSweepDigdar,
     getWindow,
     hamming,
     hanning,
@@ -42,4 +43,3 @@ export (
     )
 
 useDynLib(flow)
-
