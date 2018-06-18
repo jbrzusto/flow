@@ -105,8 +105,8 @@ if (doUsage) {
 
 suppressWarnings(suppressMessages(library(flow)))
 
-allFiles = dir(INDIR, full.names=TRUE)
-first = grep(pattern=paste0(TS, ".*\\.dat(?:\\.gz)$"), allFiles, perl=TRUE)
+allFiles = dir(INDIR, full.names=TRUE, pattern=".*\\.dat(\\.gz)?$")
+first = grep(pattern=TS, allFiles, perl=TRUE)
 if (length(first) >= 1) {
     files = head(allFiles[first[1]:length(allFiles)], N)
     if (length(files) < N) {
