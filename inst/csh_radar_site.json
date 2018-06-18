@@ -10,6 +10,8 @@
     "jpgMPP"      : 4.8,                                  // meters per pixel for cartesian jpeg image (should be a multiple of digitizer cell size 1.2m)
     "jpgXLim"     : [-6000.0, 6000.0],                    // east/west limits of cartesian jpeg image, in metres relative to radar (negative is west)
     "jpgYLim"     : [-1000, 6000],                        // north/south limits of cartesian jpeg image, in metres relative to radar (negative is south)
+    "jpgAziLim"   : [250, 110],                           // limits of azimuths to use in jpeg image, in decimal degrees clockwise from true North
+    "jpgRangeLim" : [0.0, 6000.0],                        // limits of range to use in jpeg image, in metres from radar
     "polMPS"      : 7.2,                                  // metres per sample to export to .pol file; closest matching decimation of digitizer clock is used
     "polAziLim"   : [250, 110],                           // limits of azimuths to export to .pol file, in decimal degrees clockwise from true North
     "polRangeLim" : [0.0, 6000.0]                         // limits of range to export to .pol file, in metres from radar
