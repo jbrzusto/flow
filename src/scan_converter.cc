@@ -32,19 +32,19 @@ scan_converter::scan_converter ( int nr,
   inds(0)
 {
   // create a scan converter for mapping polar to cartesian data
-  // 
+  //
   // nr, nc: dimensions of the polar data:  nr angular rows of nc radial slots each
   // w, h: dimensions of output (sub) block
   // x0, y0: offset of output (sub) block in output buffer
-  // xc, yc: offset of polar centre in output buffer (need not 
+  // xc, yc: offset of polar centre in output buffer (need not
   //         be within the output sub block)
   // always_smooth_angular: if true, always do smoothing across pulses
-  // scale:  pixels per sample 
+  // scale:  pixels per sample
   // first_range:  range of first sample, measured in range-cell size.  This need not be an integer.
   //               Negative means there are bogus (pre-trigger)
   //               samples at the start of each pulse; positive means there are missing samples.
-  // azi_begin: azimuth of first pulse [0..1]
-  // azi_end: azimuth of last pulse [0..1]
+  // azi_begin: azimuth of first pulse [0..1] (fraction of circle clockwise from positive x axis)
+  // azi_end: azimuth of last pulse [0..1] (fraction of circle clockwise from positive x axis)
 
   char use_radial_neighbours;	/* true if radially neighbouring input slots are used for each output slot */
   int angular_neighbour_thresh; /* the minimum (in pixels) at which angular neighbours are used for each pixel */
@@ -63,7 +63,7 @@ scan_converter::scan_converter ( int nr,
   // -------------------- INDEX FROM SCRATCH --------------------
 
   /* we'll need a list big enough to hold up to 4 input slot indexes per output slot */
-      
+
   int inds_needed = w * h * 4;
   if (!inds || num_inds < inds_needed) {
     inds = new int[inds_needed];
@@ -77,7 +77,7 @@ scan_converter::scan_converter ( int nr,
      by less than one pixel) then we will average 3
      radially-neighbouring samples */
 
-  use_radial_neighbours = scale < 1.0;  
+  use_radial_neighbours = scale < 1.0;
 
   first_range *= scale; /* convert first_range into pixel units */
 
@@ -93,7 +93,7 @@ scan_converter::scan_converter ( int nr,
 
   l = 0; /* avoid a compiler warning */
   jhi = x0 + h;
-  ihi = y0 + w; 
+  ihi = y0 + w;
   theta0 = 2 * M_PI * (1.0 - azi_begin); // mathematical angle at first pulse
   theta_factor = (2 * M_PI * azi_step); // convert angle to pulse index
 
@@ -105,7 +105,7 @@ scan_converter::scan_converter ( int nr,
       double bb = fmod( 2 * M_PI + aa, 2 * M_PI) / (2 * M_PI) - azi_begin;
       theta = (int) (0.5 +  bb / azi_step);
       range = (int) (0.5 + (sqrt(x * x + y * y) - first_range) / scale);
-      if (range >= 0 && range < snc 
+      if (range >= 0 && range < snc
           && (
               (normal_limits && theta >= 0 && theta < nr))) {
         // the pixel has at least one corresponding data sample
@@ -162,7 +162,7 @@ scan_converter::~scan_converter() {
 
 
 void
-scan_converter::apply (t_sample *samp, 
+scan_converter::apply (t_sample *samp,
                        t_pixel *pix,
                        int span,
                        t_palette *pal,
@@ -205,7 +205,7 @@ scan_converter::apply (t_sample *samp,
     if (inds[i] >= 0) {
       sample_sum += samp[inds[i] >> SCVT_EXTRA_PRECISION_BITS] - sample_origin;
       ++sample_count;
-    } else { 
+    } else {
 #endif
       if (inds[i] != SCVT_NODATA_VALUE) {
 	// a negative index represents the last one for
