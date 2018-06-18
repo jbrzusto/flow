@@ -1,7 +1,7 @@
 #' Export a set of sweeps in WAMOS format.
 #'
 #' Writes a file in the WAMOS .pol format which contains sweeps from the set.
-#' 
+#'
 #' @param sweeps: a list of sweeps of data, with metadata attributes,
 #' as returned by \code{getSweep()}.  Sweeps must be in chronological
 #' order, and at constant time spacing (i.e. no missing sweeps are
@@ -36,23 +36,32 @@
 #' @param decim: integer; if 1, use all samples in a pulse, subject to \code{range}, above.
 #' If > 1, then take the last of each sequence of decim consecutive samples, discarding
 #' the rest.  The sampling rate is adjusted accordingly.
-#' 
+#'
+#' @param meta; list with these named items which are used to populate .pol file fields:
+#' \itemize{
+#' \item tower: character scalar; label for radar site
+#' \item ident: character scalar; 3-letter code for site
+#' \item user: character scalar; models of radar and digitizer
+#' \item lat: numeric scalar; latitude, in degrees North
+#' \item long: numeric; longitude, in degrees East
+#' \item heading: numeric; angle of heading pulse, in degrees clockwise from true North
+#' \item aziStart: numeric; angle of first pulse, in degrees clockwise from true North
 #' @return full path to the file written
-#' 
+#'
 #' @author John Brzustowski \email{jbrzusto@@REMOVE_THIS_PART_fastmail.fm}
 
 library(magrittr)
 
-wamosHeader = 
+wamosHeader =
 "CC *********** PARAMETER WRITTEN BY exportWamos.R   **************\r
 OWNER John Brzustowski  CC OWNER OF PROGRAM\r
 VINFO capture - Version 0.1\r
-VERSN Jul 03 2015 00:00:00 CC COMPILATION DATE AND TIME\r
-TOWER FORCE Visitor Centre\r
-IDENT fvc   CC SHORT IDENTIFIER\r
-USER  Bridgemaster E + redpitaya digdar\r
-LAT   045\xb022.281 N   CC [Degree] POSITION NORTH\r
-LONG  064\xb024.167 W   CC [Degree] POSITION EAST\r
+VERSN Jun 13 2018 00:00:00 CC COMPILATION DATE AND TIME\r
+TOWER @TOWER\r
+IDENT @IDENT   CC SHORT IDENTIFIER\r
+USER  @USER\r
+LAT   @LAT   CC [Degree] POSITION NORTH\r
+LONG  @LONG   CC [Degree] POSITION EAST\r
 POSTV     1          CC          LAT LONG VALID FLAG\r
 DATE  @DATE\r
 TIME  @TIME\r
@@ -101,7 +110,23 @@ CC     **************** STOP FRAMEDATA SECTION *************\r
 EOH   CC ************ END OF HEADER **************\r
 "
 
+fmtLat = function(lat) {
+    letter = if (lat > 0) "N" else "S"
+    lat = abs(lat)
+    sprintf("%03d\xb0%.3f %s", trunc(lat), 60 * (lat - trunc(lat)), letter)
+}
+fmtLong = function(lon) {
+    letter = if (lon > 0) "E" else "W"
+    lon = abs(lon)
+    sprintf("%03d\xb0%.3f %s", trunc(lon), 60 * (lon - trunc(lon)), letter)
+}
+
 wamosFormat = list(
+    TOWER = "%s",
+    IDENT = "%s",
+    USER = "%s",
+    LAT = fmtLat,
+    LONG = fmtLong,
     DATE  = "%m-%d-%Y",
     TIME  = "%H:%M:%S",
     INTER = "%5g",
@@ -124,10 +149,10 @@ wamosFormat = list(
     )
 
 
-wamosFrameDataLine = 
-"@FNUM @FDATE @FTIME @GYROC 000.0 @FRPT 045\xb022.281 N  064\xb024.167 W  000  000.0  000  @FDEP  -09.0  -09.0  -09.0       \r\n"
+wamosFrameDataLine =
+"@FNUM @FDATE @FTIME @GYROC 000.0 @FRPT @LAT  @LONG  000  000.0  000  @FDEP  -09.0  -09.0  -09.0       \r\n"
 
-wamosFilenameFormat = "%Y%m%d%H%M%Sfvc.pol"  ## fvc is force visitor centre
+wamosFilenameFormat = "%Y%m%d%H%M%S%%s.pol"  ## '%%s' is for short site code; strftime is used first, then sprintf
 
 FORCEHdg = 136.8 ## heading marker of FORCE VC radar, in degrees
                  ## clockwise from True North.
@@ -139,12 +164,12 @@ FORCEStart = 180 ## true azimuth of first captured pulse; we capture
                  ## degrees from true North.
 
 TS = function(x) structure(x, class=class(Sys.time()))
-FMT = function(x, y) if (inherits(x, "POSIXt")) format(x, y) else paste(sprintf(y, x), collapse=" ")
+FMT = function(x, y) if (inherits(x, "POSIXt")) format(x, y) else if (inherits(y, "function")) y(x) else paste(sprintf(y, x), collapse=" ")
 FILLIN = function(s, x, y) sub(paste0("@", x), FMT(y, wamosFormat[[x]]), s, useBytes=TRUE, fixed=TRUE)
 
 VELOCITY_OF_LIGHT = 2.99792458E8
 
-exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeLim = NULL, decim = 1) {
+exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeLim = NULL, decim = 1, meta) {
     ## format timestamp of last pulse in first sweep into filename and open it
 
     nsw = length(sweeps)
@@ -152,8 +177,8 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
     ## timestamps of last pulse in first and last sweeps
     ts    = tail(sweeps[[  1]]$ts, 1)
     tsEnd = tail(sweeps[[nsw]]$ts, 1)
-    
-    fname = TS(ts) %>% FMT(wamosFilenameFormat) %>% file.path(path, .)
+
+    fname = TS(ts) %>% FMT(wamosFilenameFormat) %>% sprintf (meta$ident) %>% file.path(path, .)
 
     f = file(fname, "wb")
 
@@ -164,14 +189,14 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
     nsIn = sa$ns
 
     ## repetition period (sweep duration)
-    
+
     RPT = (tsEnd - ts) / (nsw - 1)
 
     ## sample selector for each pulse; first apply decimation:
     SSEL = rep(c(rep(FALSE, decim - 1), TRUE), length=nsIn)
 
     ## apply range limits
-    
+
     if (is.null(rangeLim)) {
         range0 = 0
     } else {
@@ -187,7 +212,7 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
     }
     ## number of samples retained per pulse:
     nsOut = sum(SSEL)
-    
+
     ## if we don't have full sweeps, pad with zero pulses and
     ## appropriate numbers of heading pulses
 
@@ -200,7 +225,7 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
         padACP = raw(2 * 2 * nsOut)
         ## set bit 5 of high byte of first sample in first pulse
         padACP[2] = as.raw(32)
-        
+
         if (diff(aziLim) > 0) {
             ## usual situation: no zero crossing; must pad at
             ## start and end of included area
@@ -217,27 +242,32 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
         }
     }
 
-    
+
     ## make the header by replacing tagged strings with their
     ## formatted items
 
     cat ((
         wamosHeader
-        %>% FILLIN("DATE",  TS(ts)                )
-        %>% FILLIN("TIME",  TS(ts)                )
-        %>% FILLIN("INTER", 30                    )  ## 30 minute sampling interval?
-        %>% FILLIN("NIPOL", nsw - 1               )
-        %>% FILLIN("NUMRE", nsw                   )
-        %>% FILLIN("RPT",   RPT                   )
-        %>% FILLIN("SDRNG", round(range0)         )
-        %>% FILLIN("SFREQ", sa$rate / 1E6 / decim )
-        %>% FILLIN("FIFO",  nsOut                 )  ## number of samples
-        %>% FILLIN("BO2RA", FORCEHdg              )  ## compass direction of heading, degrees clockwise from N
-        %>% FILLIN("GYROC", FORCEStart - FORCEHdg )  ## nominal azimuth of first pulse, relative to heading
-        %>% FILLIN("P_DEP", mean(depths)          )  ## mean depth across sweeps
+        %>% FILLIN("DATE",  TS(ts)                        )
+        %>% FILLIN("TIME",  TS(ts)                        )
+        %>% FILLIN("INTER", 30                            )  ## 30 minute sampling interval?
+        %>% FILLIN("NIPOL", nsw - 1                       )
+        %>% FILLIN("NUMRE", nsw                           )
+        %>% FILLIN("RPT",   RPT                           )
+        %>% FILLIN("SDRNG", round(range0)                 )
+        %>% FILLIN("SFREQ", sa$rate / 1E6 / decim         )
+        %>% FILLIN("FIFO",  nsOut                         )  ## number of samples
+        %>% FILLIN("BO2RA", meta$heading                  )  ## compass direction of heading, degrees clockwise from N
+        %>% FILLIN("GYROC", meta$aziStart - meta$heading  )  ## nominal azimuth of first pulse, relative to heading
+        %>% FILLIN("P_DEP", mean(depths)                  )  ## mean depth across sweeps
+        %>% FILLIN("LAT",   meta$lat                      )
+        %>% FILLIN("LONG",  meta$long                     )
+        %>% FILLIN("TOWER", meta$tower                    )
+        %>% FILLIN("IDENT", meta$ident                    )
+        %>% FILLIN("USER",  meta$user                     )
 
         ), file=f)
-    
+
     ## for each sweep, generate an entry in the frame table
 
     ## generate estimated "start" of first sweep, since we have only a sector
@@ -247,7 +277,7 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
     for (i in seq(along=sweeps)) {
         np = length(sweeps[[i]]$ts)
         tsEnd = sweeps[[i]]$ts[np]
-        
+
         cat ((
             wamosFrameDataLine
             %>% FILLIN("FNUM",  i                        )
@@ -256,6 +286,8 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
             %>% FILLIN("GYROC", sweeps[[i]]$azi[1] * 360 )
             %>% FILLIN("FRPT",  tsEnd - tsLastEnd        )
             %>% FILLIN("FDEP",  depths[i]                )
+            %>% FILLIN("LAT",   meta$lat                 )
+            %>% FILLIN("LONG",  meta$long                )
             ), file=f)
         tsLastEnd = tsEnd
     }
@@ -293,7 +325,7 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
         ## convert to full-scale 12 bit data.
 
         samps = as.integer(round((samps - (ddec * 4096)) / (ddec * (16383 - 4096)) * 4095))
-        
+
         ## get bearing pulse count at each pulse; i.e. number of bearing pulses
         ## which should have been seen before or at this pulse
         bpc = floor(nACP * sweeps[[i]]$azi)
@@ -328,7 +360,7 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
                 ## write 10-byte byte count
                 padLength = length(prePad) + length(postPad)
                 cat (sprintf("%10d", length(samps) * 2 + padLength), file=f)
-                
+
                 writeBin(prePad, f, useBytes = TRUE)
                 writeBin(samps, f, size=2, useBytes=TRUE)
                 writeBin(postPad, f, useBytes = TRUE)
@@ -343,7 +375,7 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
 
                 ## write 10-byte byte count
                 cat (sprintf("%10d", length(samps) * 2 + padLength), file=f)
-                
+
                 ## write initial segment
                 writeBin(samps[  init ], f, size=2, useBytes=TRUE)
                 ## write padding
@@ -352,7 +384,7 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
                 writeBin(samps[ -init ], f, size=2, useBytes=TRUE)
             }
         }
-    }        
+    }
     close(f)
-    return(fname)
+    return(paste0(fname, ".bz2"))
 }

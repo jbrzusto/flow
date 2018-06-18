@@ -1,0 +1,16 @@
+// comment-augmented JSON:  portions of lines beginning with // are ignored
+{
+    "tower"       : "FORCE Visitor Centre",              // label for radar site
+    "ident"       : "fvc",                                // short code for site
+    "user"        : "Bridgemaster E + redpitaya digdar",  // models of radar and digitizer
+    "lat"         : 45.37135,                             // latitude, in decimal degrees North
+    "long"        : -64.40278,                            // longitude, in decimal degrees East
+    "heading"     : 136.8,                                // angle of heading pulse, in decimal degrees clockwise from true North
+    "aziStart"    : 180.0,                                // angle of first pulse, in decimal degrees clockwise from true North
+    "jpgMPP"      : 4.8,                                  // meters per pixel for cartesian jpeg image (should be a multiple of digitizer cell size)
+    "jpgXLim"     : [-9000.0, 0.0],                       // east/west limits of cartesian jpeg image, in metres relative to radar (negative is west)
+    "jpgYLim"     : [-5775, 3182],                        // north/south limits of cartesian jpeg image, in metres relative to radar (negative is south)
+    "polMPS"      : 7.2,                                  // metres per sample to export to .pol file; closest matching decimation of digitizer clock is used
+    "polAziLim"   : [180, 291.6],                         // limits of azimuths to export to .pol file, in decimal degrees clockwise from true North
+    "polRangeLim" : [0.0, 9000.0]                         // limits of range to export to .pol file, in metres from radar
+}

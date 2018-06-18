@@ -1,0 +1,18 @@
+// comment-augmented JSON:  portions of lines beginning with // are ignored
+// This file is a template.  Fill in details and resave as XXX_radar_site.json, where
+// XXX is the field "ident" (e.g. "fvc_radar_site.json")
+{
+    "tower"       : "",         // label for radar site; e.g. "FORCE Visitors Centre"
+    "ident"       : "",         // short code for site; e.g. "fvc"; used in .pol.bz2 filenames
+    "user"        : "",         // models of radar and digitizer; e.g. "Bridgemaster E + red pitaya digdar"
+    "lat"         : 0.0,        // latitude, in decimal degrees North (negative for South)
+    "long"        : 0.0,        // longitude, in decimal degrees East (negative for West)
+    "heading"     : 0.0,        // angle of heading pulse, in decimal degrees clockwise from true North
+    "aziStart"    : 0.0,        // angle of first pulse, in decimal degrees clockwise from true North
+    "jpgMPP"      : 0.0,        // meters per pixel for cartesian jpeg image (should be a multiple of digitizer cell size)
+    "jpgXLim"     : [0.0, 0.0], // east/west limits of cartesian jpeg image, in metres relative to radar (negative is west)
+    "jpgYLim"     : [0.0, 0.0], // north/south limits of cartesian jpeg image, in metres relative to radar (negative is south)
+    "polMPS"      : 0.0,        // metres per sample to export to .pol file; closest matching decimation of digitizer clock is used
+    "polAziLim"   : [0.0, 0.0], // limits of azimuths to export to .pol file, in decimal degrees clockwise from true North
+    "polRangeLim" : [0.0, 0.0]  // limits of range to export to .pol file, in metres from radar
+}
