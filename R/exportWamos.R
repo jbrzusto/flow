@@ -185,6 +185,12 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
     ## sweep attributes
     sa = attr(sweeps[[1]], "radar.meta")
 
+    ## add in site metadata
+    sa[names(meta)] = meta
+
+    ## allow override by site file
+    sa[names(meta$overrides)] = meta$overrides
+
     ## samples per pulse in input
     nsIn = sa$ns
 
@@ -306,11 +312,8 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
 
         ## for each sweep, write its raw sample data.
 
-        ## Convert to 12-bit scale.
-
-        ## Max sample value in 14 bits is 16383.  Lowest sample value
-        ## in 14 bits with existing voltage mapping is ~ 4096.  We've
-        ## been adding rather than decimating at low decimation rates.
+        ## Convert to 12-bit scale using site's dynRange, and depending on the
+        ## digitizing mode ("sum" or "first")
 
         np = length(sweeps[[i]]$ts)
         nsamps = nsIn * np
@@ -320,11 +323,11 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
         samps = as.numeric(readBin(unlist(sweeps[[i]]$samples), integer(), size=2, n=nsamps, signed=FALSE)[SSEL])
 
         ## number of samples combined (by the digitizer) into each sample
-        ddec = round(125e6 / sa$rate)
+        ddec = if (sa$mode=="sum") round(125e6 / sa$rate) else 1
 
         ## convert to full-scale 12 bit data.
 
-        samps = as.integer(round((samps - (ddec * 4096)) / (ddec * (16383 - 4096)) * 4095))
+        samps = as.integer(round((samps - (ddec * 4096)) / (ddec * (diff(sa$dynRange))) * 4095))
 
         ## get bearing pulse count at each pulse; i.e. number of bearing pulses
         ## which should have been seen before or at this pulse

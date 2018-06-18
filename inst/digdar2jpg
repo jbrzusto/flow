@@ -44,7 +44,6 @@ ARGC = length(ARGV)
 QUALITY = 75
 N = 1
 OUTDIR = INDIR = "."
-DECIM = 1
 TS = "" ## default to using any date/time
 SITE = NULL
 FILE = NULL
@@ -95,15 +94,6 @@ while( i <= length(ARGV)) {
     } else if (ARGV[i] == "-o") {
         if (i < ARGC) {
             OUTDIR = ARGV[i + 1]
-            i = i + 1
-        } else {
-            doUsage = TRUE
-        }
-    } else if (ARGV[i] == "-D") {
-        if (i < ARGC) {
-            DECIM = as.integer(ARGV[i + 1])
-            if (is.na(DECIM))
-                doUsage = TRUE
             i = i + 1
         } else {
             doUsage = TRUE
@@ -160,8 +150,10 @@ VELOCITY_OF_LIGHT = 2.99792458E8
 ## read sweeps one at a time and scan convert them.
 for (i in seq(along=files)) {
     x = getSweepDigdar(files[i])
-    ## combine site and sweep metadata
+    ## combine site and sweep metadata, allowing site to override some sweep metadata
     meta = c(siteMeta, attr(x, "radar.meta"))
+    meta[names(siteMeta$overrides)] = siteMeta$overrides
+
     dim(x$samples) = c(meta$ns * 2, meta$np)
 
     samplingRate = meta$clock * 1e6
@@ -171,7 +163,7 @@ for (i in seq(along=files)) {
     mps = VELOCITY_OF_LIGHT / (samplingRate / decimation) / 2.0
 
     ## azimuth range of valid pulses at 0.1 deg spacing
-
+    sampCount = if (meta$mode == "sum") meta$decim else 1
 
     ## Pulses per sweep: a kludgy way to achieve a fixed number of pulses
     ##   per sweep, currently needed by the scan converter.  The
@@ -180,7 +172,13 @@ for (i in seq(along=files)) {
     ##   sweep. We select down to 3600 pulses, which gives 0.1 degree
     ##   azimuth resolution.
 
-    desiredAzi = seq(from = (meta$jpgAziLim[1] - meta$heading) / 360, to = (meta$jpgAziLim[2] - meta$heading) / 360, by = 1.0 / 3600)
+    azis = ((meta$jpgAziLim - meta$heading) / 360) %% 1
+    dazi = 1.0 / 3600
+    if (diff(azis) > 0) {
+        desiredAzi = seq(from = azis[1], to = azis[2], by = dazi)
+    } else {
+        desiredAzi = c(seq(from = azis[1], to = 1.0, by = dazi), seq(from = 0, to = azis[2], by = dazi))
+    }
     pulsesPerSweep = length(desiredAzi)
 
     ## get pulses uniformly spread around circle
@@ -195,6 +193,7 @@ for (i in seq(along=files)) {
     iwidth = diff(meta$jpgXLim) / meta$jpgMPP
     iheight = diff(meta$jpgYLim) / meta$jpgMPP
     aziOffset = -0.25 ## (adjustment to convert clockwise azimuth from North to clockwise azimuth from positive x-axis, in units of 1 circle)
+    browser()
     scanConv = .Call("make_scan_converter", as.integer(c(pulsesPerSweep, meta$ns, iwidth, iheight, 0, 0, iwidth, meta$jpgYLim[2] * ppm, TRUE)), c(ppm * mps, 0 , meta$jpgAziLim[1]/360.0 + aziOffset, meta$jpgAziLim[2]/360.0 + aziOffset))
 
     pix = matrix(0L, iheight, iwidth)
@@ -202,10 +201,10 @@ for (i in seq(along=files)) {
     attr(pix, "channels") = 4
     pal = readRDS(system.file("radarImagePalette.rds", package="flow"))  ## low-overhead read of palette, to allow changing dynamically
 
-    .Call("apply_scan_converter", scanConv, x$samples, pix, pal, as.integer(c(iwidth, 8192 * decimation, 0.5 + decimation * (16383 - 8192) / 255)))
+    .Call("apply_scan_converter", scanConv, x$samples, pix, pal, as.integer(c(iwidth, meta$jpgDynRange[1] * sampCount, 0.5 + sampCount * (diff(meta$jpgDynRange) / 255))))
 
     ## write out jpeg
-    outname = file.path(OUTDIR, sub("\\.dat(?:\\.gz)$", ".jpg", basename(files[i]), perl=TRUE))
+    outname = file.path(OUTDIR, sub("\\.dat(\\.gz)?$", ".jpg", basename(files[i]), perl=TRUE))
     writeJPEG(pix, outname, quality=QUALITY / 100.0, bg="black")
 
     cat(outname, "\n")
