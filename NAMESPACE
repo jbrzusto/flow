@@ -29,6 +29,7 @@ export (
     planeWave,
     plot_radial_velocity_field,
     plot_velocity_field,
+    postInstall,
     predictTide,
     rangeCorrectionScale,
     rad,

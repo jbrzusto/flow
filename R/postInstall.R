@@ -11,7 +11,7 @@
 
 postInstall = function() {
     SU = function(cmd, ...) system(sprintf(paste("sudo", cmd), ...))
-    SCR = function(x) SU("ln -s %s /usr/local/bin/%s", x, system.file(x, package="flow"))
+    SCR = function(x) SU("ln -s %s /usr/local/bin/%s", system.file(x, package="flow"), x)
 
     SCR("makepol")        ## script to generate a bz2-compressed .pol file from a sequence of digdar .dat files
     SCR("digdar2jpg")     ## script to generate (and display) a .jpg scan-converted from a single digdar .dat file
