@@ -9,15 +9,15 @@
     "dynRange"    : [2900, 16383],                        // dynamic range of raw samples from digitizer
     "lat"         : 45.364395,                            // latitude, in decimal degrees North
     "long"        : -64.39204,                            // longitude, in decimal degrees East
-    "heading"     : 180.0,                                // angle of heading pulse, in decimal degrees clockwise from true North
-    "aziStart"    : 180.0,                                // angle of first pulse, in decimal degrees clockwise from true North
+    "heading"     : 252.4,                                // angle of heading pulse, in decimal degrees clockwise from true North
+    "aziStart"    : 252.4,                                // angle of first pulse, in decimal degrees clockwise from true North (might be different)
     "jpgMPP"      : 4.8,                                  // meters per pixel for cartesian jpeg image (should be a multiple of digitizer cell size 1.2m)
     "jpgDynRange" : [5000, 16383],                        // range of sample values that will span black to white in jpeg (saturating at ends)
     "jpgXLim"     : [-6000.0, 6000.0],                    // east/west limits of cartesian jpeg image, in metres relative to radar (negative is west)
-    "jpgYLim"     : [-1000, 6000],                        // north/south limits of cartesian jpeg image, in metres relative to radar (negative is south)
-    "jpgAziLim"   : [70, 290],                            // limits of azimuths to use in jpeg image, in decimal degrees clockwise from true North
+    "jpgYLim"     : [-6000, 3025],                        // north/south limits of cartesian jpeg image, in metres relative to radar (negative is south)
+    "jpgAziLim"   : [85, 300],                            // limits of azimuths to use in jpeg image, in decimal degrees clockwise from true North
     "jpgRangeLim" : [0.0, 6000.0],                        // limits of range to use in jpeg image, in metres from radar
     "polMPS"      : 7.2,                                  // metres per sample to export to .pol file; closest matching decimation of digitizer clock is used
-    "polAziLim"   : [250, 110],                           // limits of azimuths to export to .pol file, in decimal degrees clockwise from true North
+    "polAziLim"   : [85, 300],                            // limits of azimuths to export to .pol file, in decimal degrees clockwise from true North
     "polRangeLim" : [0.0, 6000.0]                         // limits of range to export to .pol file, in metres from radar
 }
