@@ -28,7 +28,8 @@ scan_converter::scan_converter ( int nr,
   first_range(first_range),
   azi_begin(azi_begin),
   azi_end(azi_end),
-  azi_step((azi_end - azi_begin) / (nr - 1.0)),
+  normal_limits(azi_begin < azi_end),
+  azi_step((azi_end - azi_begin + (normal_limits ? 0.0 : 1.0))  / (nr - 1.0)),
   inds(0)
 {
   // create a scan converter for mapping polar to cartesian data
@@ -52,13 +53,10 @@ scan_converter::scan_converter ( int nr,
   int ihi, jhi;
   int range, theta;
   double x, y;
-  double theta0, theta_factor;
   int sample_sum;
   char sample_count;
 
   int snc = nc * SCVT_EXTRA_PRECISION_FACTOR; // scaled version of nc with extra pr
-
-  char normal_limits = azi_begin <= azi_end;
 
   // -------------------- INDEX FROM SCRATCH --------------------
 
@@ -94,20 +92,33 @@ scan_converter::scan_converter ( int nr,
   l = 0; /* avoid a compiler warning */
   jhi = x0 + h;
   ihi = y0 + w;
-  theta0 = 2 * M_PI * (1.0 - azi_begin); // mathematical angle at first pulse
-  theta_factor = (2 * M_PI * azi_step); // convert angle to pulse index
 
   for (j = x0; j < jhi; ++j ) {
-    y = (j - yc + 0.5);
+    y = (yc - j + 0.5);  // increasing y coordinate means down on image
     for (i = y0; i < ihi; ++i) {
       x = i - xc + 0.5;
-      double aa = atan2(y, x);
-      double bb = fmod( 2 * M_PI + aa, 2 * M_PI) / (2 * M_PI) - azi_begin;
-      theta = (int) (0.5 +  bb / azi_step);
+      // aa is compass angle, with vertical up = 0, right = 0.25, down=0.5, left=0.75
+      double aa = fmod( 2 * M_PI + atan2(x, y), 2 * M_PI) / (2 * M_PI);
+      if (normal_limits) {
+        if (aa < azi_begin || aa > azi_end) {
+          SCVT_NO_IND;
+          continue;
+        }
+        theta = (int) (0.5 + (aa - azi_begin) / azi_step);
+      } else {
+        if (aa > azi_end && aa < azi_begin) {
+          SCVT_NO_IND;
+          continue;
+        }
+        aa -= azi_begin;
+        if (aa < 0)
+          aa += 1.0;
+        theta = (int) (0.5 + aa / azi_step);
+      }
+      if (theta >= nr)
+        theta = nr - 1;
       range = (int) (0.5 + (sqrt(x * x + y * y) - first_range) / scale);
-      if (range >= 0 && range < snc
-          && (
-              (normal_limits && theta >= 0 && theta < nr))) {
+      if (range >= 0 && range < snc) {
         // the pixel has at least one corresponding data sample
         l = theta * snc + range;
         sample_sum = sample_count = 0;

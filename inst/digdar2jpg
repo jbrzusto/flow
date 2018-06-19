@@ -14,7 +14,9 @@ with:
 -q QUALITY: quality of output jpeg (0..100); file size increases with quality
             default: 75
 
-   -s SITE: JSON-formatted file describing the radar installation
+   -s SITE: JSON-formatted file describing the radar installation;
+            default: if first three letters of first data filename are `xyz`
+            then the default is:  `/usr/lib/R/site-library/flow/xyz_radar_site.json`
 
       -n N: number of consecutive sweeps to generate images for;
             default: 1
@@ -33,9 +35,9 @@ with:
             identifiable portion of a timestamp of the form
             YYYY-MM-DDTHH-MM-SS, e.g. "T03-45" or "02-01T".
 
-The sweeps exported are the first N in DIR which match TS.  If TS is
-not specified, the first N sweeps in DIR are used.  Sweeps are ordered
-by timestamp.
+The sweeps used are the first N in DIR which match TS.  If TS is
+not specified, the first N sweeps in DIR are used.  "first" means by timestamp
+embedded in the filename.
 ')
 }
 
@@ -172,16 +174,19 @@ for (i in seq(along=files)) {
     ##   sweep. We select down to 3600 pulses, which gives 0.1 degree
     ##   azimuth resolution.
 
-    azis = ((meta$jpgAziLim - meta$heading) / 360) %% 1
+    azis = meta$jpgAziLim / 360
     dazi = 1.0 / 3600
     if (diff(azis) > 0) {
         desiredAzi = seq(from = azis[1], to = azis[2], by = dazi)
     } else {
-        desiredAzi = c(seq(from = azis[1], to = 1.0, by = dazi), seq(from = 0, to = azis[2], by = dazi))
+        desiredAzi = c(seq(from = azis[1], to = 1.0 - dazi, by = dazi), seq(from = 0, to = azis[2], by = dazi))
     }
     pulsesPerSweep = length(desiredAzi)
 
-    ## get pulses uniformly spread around circle
+    ## convert hdg-relative azi to azi
+    x$azi = (x$azi + meta$heading / 360) %% 1
+
+    ## get pulses uniformly spread along desired arc
 
     keep = approx(x$azi, seq(along=x$azi), desiredAzi, method="constant", rule=2)$y
 
@@ -192,9 +197,7 @@ for (i in seq(along=files)) {
 
     iwidth = diff(meta$jpgXLim) / meta$jpgMPP
     iheight = diff(meta$jpgYLim) / meta$jpgMPP
-    aziOffset = -0.25 ## (adjustment to convert clockwise azimuth from North to clockwise azimuth from positive x-axis, in units of 1 circle)
-    browser()
-    scanConv = .Call("make_scan_converter", as.integer(c(pulsesPerSweep, meta$ns, iwidth, iheight, 0, 0, iwidth, meta$jpgYLim[2] * ppm, TRUE)), c(ppm * mps, 0 , meta$jpgAziLim[1]/360.0 + aziOffset, meta$jpgAziLim[2]/360.0 + aziOffset))
+    scanConv = .Call("make_scan_converter", as.integer(c(pulsesPerSweep, meta$ns, iwidth, iheight, 0, 0, -meta$jpgXLim[1] / meta$jpgMPP, meta$jpgYLim[2] / meta$jpgMPP, TRUE)), c(ppm * mps, 0 , azis))
 
     pix = matrix(0L, iheight, iwidth)
     class(pix)="nativeRaster"
