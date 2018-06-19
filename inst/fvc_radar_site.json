@@ -9,7 +9,7 @@
     "lat"         : 45.37135,                             // latitude, in decimal degrees North
     "long"        : -64.40278,                            // longitude, in decimal degrees East
     "heading"     : 136.8,                                // angle of heading pulse, in decimal degrees clockwise from true North
-    "aziStart"    : 180.0,                                // angle of first pulse, in decimal degrees clockwise from true North
+    "aziStart"    : 180.0,                                // angle of first pulse, in decimal degrees clockwise from true North (might be different)
     "jpgMPP"      : 4.8,                                  // meters per pixel for cartesian jpeg image (should be a multiple of digitizer cell size)
     "jpgDynRange" : [8192, 16383],                        // range of sample values that will span black to white in jpeg (saturating at ends)
     "jpgXLim"     : [-9000.0, 0.0],                       // east/west limits of cartesian jpeg image, in metres relative to radar (negative is west)
