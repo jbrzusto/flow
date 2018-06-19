@@ -9,25 +9,31 @@ Usage: makepol [-h] [-d] [-s SITE] [-n N] [-i INDIR] [-o OUTDIR] [-u] [TS]
 
 with:
 
-   -h: show help
+       -h: show help
 
-   -d: dry run: list the input files that would be used, but do not generate the .pol file
+       -d: dry run: list the input files that would be used, but do not generate the .pol file
 
-   -s  SITE: JSON-formatted file describing the radar installation
+  -s SITE: JSON-formatted file describing the radar installation
+           default: if first three letters of first data filename are `xyz`
+           then the default is:  `/usr/lib/R/site-library/flow/xyz_radar_site.json`
 
-   -n N: number of consecutive sweeps to export; typically of the form 1 + 2^m; default: 129
+     -n N: number of consecutive sweeps to export; typically of the form 1 + 2^m;
+           default: 129
 
-   -i INDIR: folder containing the .dat or .dat.gz sweep files; default: . (current directory)
+ -i INDIR: folder containing the .dat or .dat.gz sweep files;
+           default: . (current directory)
 
-   -o OUTDIR: folder in which to write the .pol.bz2 file; default: . (current directory)
+-o OUTDIR: folder in which to write the .pol.bz2 file;
+           default: . (current directory)
 
-   -u: leave .pol file uncompressed, instead of using `bzip2 -9` to compress it
+       -u: leave .pol file uncompressed, instead of using `bzip2 -9` to compress it
 
-   TS: timestamp selector; this is a string matching any identifiable portion of a timestamp of
-       the form YYYY-MM-DDTHH-MM-SS, e.g. "T03-45" or "02-01T".
+       TS: timestamp selector; this is a string matching any identifiable portion of a timestamp of
+           the form YYYY-MM-DDTHH-MM-SS, e.g. "T03-45" or "02-01T";
 
 The sweeps exported are the first N in DIR which match TS.  If TS is not
-specified, the first N sweeps in DIR are used.  Sweeps are ordered by timestamp.
+specified, the first N sweeps in DIR are used.  "first" means by timestamp
+embedded in the filename.
 ')
 }
 
