@@ -19,7 +19,7 @@ with:
             then the default is:  `/usr/lib/R/site-library/flow/xyz_radar_site.json`
 
       -n N: number of consecutive sweeps to generate images for;
-            default: 1
+            default: 1.  Specify `-n -1` to export images for all matching files.
 
   -i INDIR: folder containing the .dat or .dat.gz sweep files;
             default: . (current directory)
@@ -116,13 +116,18 @@ if (doUsage) {
 suppressWarnings(suppressMessages(library(flow)))
 suppressWarnings(suppressMessages(library(jpeg)))
 
+if (N == 0)
+    stop("No files requested.")
+
 if (is.null(FILE)) {
     allFiles = dir(INDIR, full.names=TRUE, pattern=".*\\.dat(\\.gz)?$")
     first = grep(pattern=TS, allFiles, perl=TRUE)
     if (length(first) >= 1) {
-        files = head(allFiles[first[1]:length(allFiles)], N)
-        if (length(files) < N) {
-            stop("Not enough files in ", INDIR, ":", "Only found ", length(files), " starting at match ", files[1])
+        files = allFiles[first[1]:length(allFiles)]
+        if (N > 0) {
+            files = head(files, N)
+            if (length(files) < N)
+                warning("Not enough files in ", INDIR, ":", "Only found ", length(files), " starting at match ", files[1], "\nProceeding with what was found!")
         }
     } else if (length(first) == 0){
         stop("No files matching ", TS, " in ", INDIR)
