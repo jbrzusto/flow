@@ -391,5 +391,5 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
         }
     }
     close(f)
-    return(paste0(fname, ".bz2"))
+    return(fname)
 }

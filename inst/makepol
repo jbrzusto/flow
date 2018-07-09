@@ -166,7 +166,6 @@ outname = exportWamos(sweeps, path=OUTDIR, depths=depth, nACP=450, decim=decim, 
 ## compress file; copy to FORCE workstation; delete
 if (COMPRESS) {
     system(paste("bzip2 -9", outname))
-} else {
-    outname = sub(".bz2$", "", outname, perl=TRUE)
+    outname = paste0(outname, ".bz2")
 }
 cat(outname, "\n")
