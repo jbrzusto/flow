@@ -42,6 +42,7 @@ ARGC = length(ARGV)
 N = 129
 OUTDIR = INDIR = "."
 TS = "" ## default to using any date/time
+Sys.setenv(TZ="GMT")
 SITE = NULL
 COMPRESS = TRUE
 DRYRUN = FALSE
