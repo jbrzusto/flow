@@ -364,9 +364,11 @@ exportWamos = function(sweeps, path, depths = 0, nACP=450, aziLim = NULL, rangeL
                 padLength = length(prePad) + length(postPad)
                 cat (sprintf("%10d", length(samps) * 2 + padLength), file=f)
 
-                writeBin(prePad, f, useBytes = TRUE)
+                if (!is.null(prePad))
+                    writeBin(prePad, f, useBytes = TRUE)
                 writeBin(samps, f, size=2, useBytes=TRUE)
-                writeBin(postPad, f, useBytes = TRUE)
+                if (!is.null(postPad))
+                    writeBin(postPad, f, useBytes = TRUE)
             } else {
                 ## number of data pulses that come before padding
                 ninit = sum(sweeps[[i]]$azi < aziLim[2])
